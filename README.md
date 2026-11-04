@@ -1,101 +1,198 @@
-# CardioGuard AI - Heart Disease Prediction & Clinical Reporting Web Application
+# HeartCare AI — Intelligent Cardiovascular Risk Prediction & CDSS
 
-A full-stack, AI-powered cardiovascular risk assessment platform that collects patient demographic and lifestyle/clinical features, predicts coronary heart disease probability with a calibrated Machine Learning model (CDC BRFSS dataset indicators), and generates a comprehensive, printable medical report with personalized clinical recommendations.
-
----
-
-## 🌟 Key Features
-
-1. **Patient Demographic Intake**:
-   - Patient Name, Date of Birth (with live age calculation & category auto-sync), Phone Number, and Blood Group (A+, A-, B+, B-, AB+, AB-, O+, O-).
-2. **17 Clinical & Lifestyle Parameters (CDC BRFSS standard)**:
-   - Body Mass Index (BMI) with interactive BMI calculator helper
-   - Physical Health Days (0–30) & Mental Health Days (0–30)
-   - Average Sleep Duration (hours/night)
-   - Smoking status & Heavy Alcohol consumption
-   - History of Cerebrovascular Accident (Stroke)
-   - Difficulty Walking or climbing stairs
-   - Gender, Age Category (13 age brackets), and Race
-   - Diabetes status (No, Yes, Borderline, Gestational)
-   - Physical Activity & Exercise adherence
-   - General Health Perception (Excellent, Very good, Good, Fair, Poor)
-   - Comorbidities: Asthma, Kidney Disease, Skin Cancer
-3. **Machine Learning Predictive Engine**:
-   - Calibrated Ensemble (Random Forest + Sigmoid calibration) trained on CDC BRFSS epidemiological parameters.
-   - Outputs calibrated risk probability (0% - 100%) and 3-tier risk classification: **Low Risk**, **Moderate Risk**, **High Risk**.
-4. **Comprehensive Medical Report Card**:
-   - Clinical facility letterhead & unique Report ID (`REP-YYYYMMDD-XXXXXX`)
-   - Verified patient demographics banner
-   - Circular probability gauge and risk badge
-   - Biomarkers and vitals summary grid
-   - Pathophysiological risk drivers breakdown (Severity tags: High / Medium / Low)
-   - Personalized clinical interventions and preventive cardiology action plan
-   - Official Physician Sign-Off & Attestation area
-   - **One-click "Print / Save PDF"** with optimized A4 clinical layout (hides non-essential UI)
-5. **Patient History & Records Management**:
-   - Stored in persistent database (SQLite / MySQL)
-   - Search historical reports by patient name, phone, or Report ID
-   - Reload and re-print previous patient reports with a single click
-6. **One-Click Demo Profiles**:
-   - `Healthy Young Adult`: Demonstrates normal parameters (~1% risk)
-   - `Moderate Risk Middle-aged`: Demonstrates borderline factors (~25% risk)
-   - `High Risk Senior`: Demonstrates multiple comorbidities (~65%+ risk)
+<p align="center">
+  <strong>Predict • Prevent • Live Healthy</strong><br>
+  A Full-Stack, AI-Powered Clinical Decision Support System (CDSS) for Early Heart Disease Risk Assessment, Patient Stratification, and Official Diagnostic Reporting.
+</p>
 
 ---
 
-## 🏗️ Project Architecture
+## 📋 Table of Contents
+1. [Overview](#-overview)
+2. [Architecture & Technology Stack](#-architecture--technology-stack)
+3. [User Views & Key Features](#-user-views--key-features)
+4. [Database Schema & Stored Procedures](#-database-schema--stored-procedures)
+5. [Quick Start & Launch Guide](#-quick-start--launch-guide)
+6. [API Specifications](#-api-specifications)
+7. [Default Clinician Credentials](#-default-clinician-credentials)
+
+---
+
+## 🌟 Overview
+
+**HeartCare AI** is an end-to-end cardiovascular healthcare application designed to evaluate patient biometric and lifestyle indicators and predict coronary heart disease probability with high accuracy. Powered by a calibrated **Random Forest Machine Learning model** trained on large-scale epidemiological data (CDC BRFSS dataset with over 319,000 patient records), the system equips clinicians, cardiologists, and healthcare staff with instant risk stratification, pathophysiological driver identification, and official printable diagnostic medical reports.
+
+---
+
+## 🏗️ Architecture & Technology Stack
+
+The platform is engineered as a decoupled, microservices-based full-stack solution:
 
 ```
 Heart Disease/
-├── frontend/               # React 19 + Vite 8 UI Dashboard
+├── frontend/                     # React 19 + Vite 8 Single Page Web App
+│   ├── public/
+│   │   ├── favicon.svg           # Heart pulse SVG icon
+│   │   ├── favicon.png           # Heart pulse PNG favicon
+│   │   └── favicon.ico           # Web browser tag icon
 │   ├── src/
-│   │   ├── App.jsx         # Clinical form, Report card & History modal
-│   │   ├── App.css         # Healthcare UI styling & Print media queries
-│   │   ├── index.css       # Global styles and typography
+│   │   ├── components/Icons.jsx  # SVG Icons & Medical Brand Logos
+│   │   ├── App.jsx               # Complete Multi-View Routing & State Engine
+│   │   ├── App.css               # Polished Healthcare Design System (Light/Dark mode)
 │   │   └── main.jsx
-│   ├── vite.config.js      # Dev server with /api proxy to ML backend
 │   └── package.json
 │
-├── ml-service/             # Python ML Prediction & Reporting Microservice
-│   ├── app.py              # Flask REST API + SQLite persistence
-│   ├── train_model.py      # ML pipeline training script
-│   ├── heart_disease_model.joblib # Calibrated ML model artifact
-│   └── heart_reports.db    # SQLite database for patient records
+├── ml-service/                   # Python Flask ML Microservice (Port 5000)
+│   ├── app.py                    # REST API + Auth + Prediction + SQLite backup
+│   ├── train_model.py            # Random Forest training & probability calibration
+│   ├── heart_disease_model.joblib# Serialized calibrated ML model artifact
+│   ├── test_api.py               # Automated ML inference integration test
+│   └── test_auth.py              # Automated auth & salt verification test
 │
-├── backend/                # Spring Boot 4 Enterprise Backend (Optional Java Gateway)
+├── backend/                      # Java 25 + Spring Boot Enterprise Gateway (Port 8080)
 │   ├── src/main/java/backend/
-│   │   ├── controller/     # HeartDiseaseController (/api/predict, /api/reports)
-│   │   ├── service/        # HeartDiseaseService (ML delegation & fallback)
-│   │   ├── entity/         # PatientReport JPA entity
-│   │   ├── repository/     # Spring Data JPA Repository
-│   │   └── dto/            # Request and Response DTOs
-│   └── pom.xml
+│   │   ├── controller/           # AuthController & HeartDiseaseController
+│   │   ├── service/              # AuthService (MySQL Stored Procedures) & HeartDiseaseService
+│   │   ├── entity/               # User & PatientReport JPA Entities
+│   │   ├── repository/           # UserRepository & PatientReportRepository
+│   │   ├── dto/                  # Request / Response DTO models
+│   │   └── util/PasswordUtil.java# SHA-256 + 16-byte secure random salt hashing
+│   ├── src/main/resources/
+│   │   ├── application.properties# MySQL DataSource & ML URL configuration
+│   │   └── schema.sql            # Spring Boot schema backup
+│   └── pom.xml                   # Maven dependencies
 │
-├── dataset/                # Generated CDC BRFSS Epidemiological Dataset
+├── database/                     # MySQL Production Database Assets
+│   └── heart_disease_db.sql      # Database schema, 3 tables & 7 stored procedures
+│
+├── dataset/                      # CDC BRFSS Heart Disease Training Dataset
 │   └── heart_2020_cleaned.csv
-├── run_app.bat             # One-click Windows launch script
+│
+├── run_app.bat                   # 1-Click Launch: Python ML (5000) + React (5173)
+├── run_spring_backend.bat        # 1-Click Launch: Java Spring Boot Backend (8080)
 └── README.md
 ```
 
+### Technology Highlights:
+- **Frontend**: React 19, Vite 8, pure CSS responsive flexbox/grid, CSS custom properties for dual **Light / Dark mode** themes.
+- **Microservice / ML**: Python 3.12, Flask, Scikit-Learn (CalibratedClassifierCV + RandomForestClassifier), Joblib, SQLite3 failover.
+- **Backend**: Java 25, Spring Boot 3/4, Spring Data JPA, Hibernate, MySQL Connector/J.
+- **Database**: MySQL 8.0 / MariaDB with InnoDB engine, utf8mb4 encoding, foreign keys, stored procedures, and audit logging.
+- **Security**: Salted SHA-256 password hashing with constant-time cryptographic validation.
+
 ---
 
-## 🚀 Getting Started
+## 🖥️ User Views & Key Features
 
-### Option 1: Quick Launch (Windows)
-Double-click `run_app.bat` in the project root directory. It will start both the Python ML API service and the React frontend in separate terminal windows.
+### 1. Home Landing Page
+- **Hero Banner**: Live SVG ECG cardiac wave animation, high-impact headline (*"Heart Disease Prediction using AI"*), explanatory subtitle, and direct CTAs (*"Start Prediction"* & *"Learn More"*).
+- **Four Core Feature Cards**:
+  1. **Early Detection**: Identify heart disease risk early and take preventive action.
+  2. **Smart Prediction**: Powered by Random Forest Machine Learning.
+  3. **Better Health**: Your heart health is our priority.
+  4. **Trusted Technology**: Accurate, reliable, and validated clinical predictions.
+- **Awareness Ticker**: Scrolling cardiac health message (*"A healthier tomorrow starts with awareness. Check your heart risk today!"*).
 
-### Option 2: Manual Step-by-Step
+### 2. About Page
+- **Project Hero**: *"HeartCare AI — Smart AI-Powered Heart Disease Prediction for a Healthier Tomorrow"*.
+- **Three Pillar Cards**:
+  - **Our Mission**: Leverage Artificial Intelligence for early detection of heart disease, promoting preventive healthcare and saving lives.
+  - **Our Vision**: A healthier world where heart disease is detected early and prevented through advanced technology.
+  - **Why Choose Us?**: AI-Powered Prediction, User-Friendly Interface, Secure & Reliable, Data-Driven Insights.
+- **Technology Stack Showcase**: Interactive badges displaying the complete engineering stack: **React.js**, **Spring Boot**, **Python**, **MySQL**, and **Flask**.
 
-#### Step 1: Start Python ML API Service
+### 3. Contact Us Page
+- **Support Hero**: High-resolution medical backdrop with ECG cardiac lines.
+- **Get in Touch Card**:
+  - **Phone**: `+91 98765 43210` (Mon–Fri, 9 AM – 6 PM)
+  - **Email**: `support@heartcareai.com`
+  - **Location**: `Dindigul, Tamil Nadu` (PSNA College of Engineering and Technology)
+- **Follow Us**: Direct social media links to LinkedIn, GitHub, YouTube, and X.
+- **Send a Message Form**: Full contact form with live validation and interactive submission feedback banner.
+- **Security Trust Strip**: Medical data confidentiality statement and staff access badge.
+
+### 4. Authentication System
+- **Clinician Sign In & Registration**:
+  - Sign in with verified clinician email and password.
+  - Registration fields: Full Name, Email, Password, Clinical Role (Cardiologist, General Physician, Doctor, Student, Public User), Hospital/Institution, Phone, and Medical License / Staff ID.
+  - **One-Click Demo Fill**: Instantly populates and authenticates demo credentials for quick evaluation.
+  - Salted SHA-256 verification and automatic user session persistence in localStorage.
+
+### 5. Clinician Workstation & Risk Assessment
+- **Dashboard Overview**: Aggregated KPI metrics (Total Screenings, High Risk Cases, Normal Cases, Average Risk Score).
+- **Interactive BMI Calculator Modal**: Calculate exact BMI in realtime from height (cm) and weight (kg).
+- **Clinical Intake Form**:
+  - Demographics: Name, Date of Birth (with auto-computed age category), Phone, Blood Group, Biological Sex.
+  - Vitals & Labs: BMI, Serum Cholesterol (Normal `< 200 mg/dL`, Borderline High `200-239 mg/dL`, High `≥ 240 mg/dL`), Sleep Duration.
+  - Comorbidities & Lifestyle: Smoking status, Alcohol consumption, Stroke history, Diabetes, General health perception, Asthma.
+- **Prediction Result & Official Report**:
+  - Framingham 10-Year Cardiovascular Risk Score (0.0% – 100.0%).
+  - 3-Tier Risk Classification: **Low Risk**, **Moderate Risk**, **High Risk**.
+  - Identified Contributing Clinical Risk Factors breakdown.
+  - Evidence-based personalized lifestyle & clinical recommendations.
+  - **Print / Save PDF**: Formatted clinical layout with hospital header, demographics, vitals, and physician sign-off line.
+
+---
+
+## 🗄️ Database Schema & Stored Procedures
+
+The database script [`database/heart_disease_db.sql`](file:///d:/Projects/Heart%20Disease/database/heart_disease_db.sql) provisions the `heart_disease_db` database with 3 tables and 7 stored procedures:
+
+### Database Tables:
+1. **`users`**: Clinician accounts, salted password hashes, roles, institutions, license numbers, and login timestamps.
+2. **`patient_reports`**: Diagnostic assessments, patient demographics, vitals, lab values, and calibrated risk scores.
+3. **`user_audit_logs`**: Comprehensive security audit trail recording logins, registrations, and administrative events.
+
+### Stored Procedures:
+| Stored Procedure | Type | Purpose |
+|---|---|---|
+| `sp_register_user` | `IN/OUT` | Validates email uniqueness, securely inserts clinician record, writes audit log, and returns HTTP status code (201 / 409). |
+| `sp_authenticate_user` | `IN` | Fetches credential record, user salt, and activation status for password verification. |
+| `sp_update_last_login` | `IN` | Updates timestamp upon successful login and logs authentication audit event. |
+| `sp_get_user_by_id` | `IN` | Retrieves full clinician profile by unique identifier (`user_id`). |
+| `sp_change_user_password` | `IN/OUT` | Updates password hash and salt with audit tracking. |
+| `sp_get_dashboard_analytics`| `IN` | Aggregates real-time clinical statistics (total evaluations, risk tiers, average risk score). |
+| `sp_save_patient_report` | `IN` | Inserts evaluated patient record, risk percentage, and clinical parameters into the reports archive. |
+
+---
+
+## 🚀 Quick Start & Launch Guide
+
+### 1. Database Setup (MySQL)
+Make sure your MySQL server is running (e.g. MySQL 8.0, XAMPP, or MariaDB). Then import the schema and stored procedures:
+```bash
+# Using MySQL Command Line Client:
+mysql -u root -p < "d:\Projects\Heart Disease\database\heart_disease_db.sql"
+```
+*(Or open `database/heart_disease_db.sql` in MySQL Workbench / phpMyAdmin and execute it).*
+
+### 2. Launching with Scripts (Recommended for Windows)
+- **Launch Frontend & ML Service**:
+  Double-click [`run_app.bat`](file:///d:/Projects/Heart%20Disease/run_app.bat)
+  - Starts Python ML microservice on `http://localhost:5000`
+  - Starts React web portal on `http://localhost:5173`
+- **Launch Spring Boot Gateway (Optional)**:
+  Double-click [`run_spring_backend.bat`](file:///d:/Projects/Heart%20Disease/run_spring_backend.bat)
+  - Starts Spring Boot application on `http://localhost:8080`
+
+### 3. Manual Startup
+
+#### Step A: Python ML Microservice
 ```powershell
-# In terminal 1:
 python ml-service\app.py
 ```
 > Server runs on `http://localhost:5000` (Healthcheck: `http://localhost:5000/api/health`)
 
-#### Step 2: Start React Frontend
+#### Step B: Spring Boot CDSS Gateway (Optional)
 ```powershell
-# In terminal 2:
+$env:JAVA_HOME="C:\Program Files\Java\jdk-25"
+cd backend
+mvn spring-boot:run
+```
+> Server runs on `http://localhost:8080`
+
+#### Step C: React Frontend
+```powershell
 cd frontend
 npm run dev
 ```
@@ -103,20 +200,23 @@ npm run dev
 
 ---
 
-## 📡 API Reference
+## 📡 API Specifications
 
-### `POST /api/predict`
-Accepts patient demographics and 17 clinical indicators, runs inference, saves the report, and returns:
-- `reportId`: Unique alphanumeric ID
-- `patient`: Demographic details
-- `prediction`: `{ riskScore: float, riskLevel: string, summary: string }`
-- `bmiDetails`: Calculated BMI category
-- `contributingFactors`: Array of identified clinical risks
-- `recommendations`: Custom lifestyle and medical action points
+| Method | Endpoint | Service | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | Backend (8080) / ML (5000) | Authenticate clinician credentials with salted SHA-256 |
+| `POST` | `/api/auth/register`| Backend (8080) / ML (5000) | Register new clinician via `sp_register_user` |
+| `POST` | `/api/predict` | ML Service (5000) | Run Random Forest prediction and generate clinical report |
+| `GET` | `/api/reports` | Backend (8080) / ML (5000) | Fetch recent patient evaluations with optional search |
+| `GET` | `/api/stats` | ML Service (5000) | Retrieve aggregated clinician dashboard statistics |
+| `GET` | `/api/health` | ML Service (5000) | Microservice status and loaded model confirmation |
 
-### `GET /api/reports`
-Returns recent patient reports. Supports optional search parameter: `?search=<name_or_phone>`.
+---
 
-### `GET /api/reports/<report_id>`
-Retrieves full saved report by its unique ID.
+## 🔑 Default Clinician Credentials
 
+For immediate demonstration and testing:
+- **Email**: `doctor@cardioguard.com`
+- **Password**: `password123`
+- **Name**: Dr. Alistair Reed, MD (Cardiologist)
+- **One-Click Demo Button**: Available directly inside the login modal on the website.

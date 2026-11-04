@@ -56,6 +56,7 @@ public class AuthService {
 
         // Try executing stored procedure sp_register_user first
         boolean spExecuted = false;
+        String spMessage = null;
         try {
             StoredProcedureQuery query = entityManager.createStoredProcedureQuery("sp_register_user");
             query.registerStoredProcedureParameter("p_user_id", String.class, ParameterMode.IN);
@@ -83,10 +84,13 @@ public class AuthService {
             query.execute();
 
             Integer statusCode = (Integer) query.getOutputParameterValue("p_status_code");
-            String message = (String) query.getOutputParameterValue("p_message");
+            spMessage = (String) query.getOutputParameterValue("p_message");
 
             if (statusCode != null && statusCode == 409) {
-                throw new IllegalStateException("An account with this email address already exists.");
+                String errorMsg = (spMessage != null && !spMessage.isEmpty()) 
+                        ? spMessage 
+                        : "An account with this email address already exists.";
+                throw new IllegalStateException(errorMsg);
             }
             spExecuted = true;
         } catch (IllegalStateException e) {
@@ -134,8 +138,12 @@ public class AuthService {
         UserDto userDto = mapToDto(savedUser);
         String token = "HCAI-" + UUID.randomUUID().toString();
 
+        String successMessage = (spExecuted && spMessage != null && !spMessage.trim().isEmpty())
+                ? spMessage.trim()
+                : "Registration successful. Welcome to HeartCare AI.";
+
         return AuthResponse.builder()
-                .message("Registration successful. Welcome to HeartCare AI.")
+                .message(successMessage)
                 .user(userDto)
                 .token(token)
                 .build();
