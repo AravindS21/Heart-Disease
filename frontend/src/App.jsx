@@ -54,7 +54,17 @@ import {
   SpringBootLogo,
   PythonLogo,
   MySQLLogo,
-  FlaskLogo
+  FlaskLogo,
+  Headphones,
+  Mail,
+  MapPin,
+  Send,
+  MessageSquare,
+  Edit3,
+  LinkedInIcon,
+  GitHubIcon,
+  YouTubeIcon,
+  TwitterXIcon
 } from './components/Icons';
 
 const AGE_CATEGORIES = [
@@ -204,6 +214,31 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Contact Form State
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (!contactForm.name || !contactForm.email || !contactForm.subject || !contactForm.message) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+    setContactLoading(true);
+    setTimeout(() => {
+      setContactLoading(false);
+      setContactSubmitted(true);
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+      setTimeout(() => setContactSubmitted(false), 6000);
+    }, 600);
+  };
+
   // Sync user state to localStorage
   useEffect(() => {
     if (currentUser) {
@@ -259,8 +294,8 @@ export default function App() {
       return;
     }
     if (sectionId === 'contact') {
-      const el = document.querySelector('.hospital-footer');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      setActiveTab('contact');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
   };
@@ -623,9 +658,10 @@ export default function App() {
           </button>
           <button
             type="button"
-            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'contact' ? 'active' : ''}`}
+            className={`nav-link-btn ${activeTab === 'contact' ? 'active' : ''}`}
             onClick={() => handleNavClick('contact')}
           >
+            <Phone size={15} />
             Contact
           </button>
 
@@ -1011,6 +1047,209 @@ export default function App() {
               </div>
             </div>
           </section>
+        </div>
+      )}
+
+      {/* ========================================================
+          VIEW: CONTACT US PAGE (Matches Reference Image)
+          ======================================================== */}
+      {activeTab === 'contact' && (
+        <div className="contact-view">
+          {/* Hero Banner */}
+          <section className="contact-hero">
+            <div className="contact-hero-left">
+              <h1 className="contact-hero-title">Contact Us</h1>
+              <h2 className="contact-hero-subtitle">We'd love to hear from you!</h2>
+              <p className="contact-hero-desc">
+                For support, inquiries, or feedback, reach out to our team.<br />
+                We are here to help you with HeartCare AI.
+              </p>
+            </div>
+            <div className="contact-hero-right">
+              <img
+                src="/images/hero-doctor-heart.png"
+                alt="HeartCare AI - Contact Us 3D Heart Visual"
+                className="contact-doctor-artwork"
+              />
+            </div>
+          </section>
+
+          {/* Main 2-Column Content Section */}
+          <section className="contact-main-grid">
+            {/* Left Column: Sidebar Cards */}
+            <div className="contact-sidebar">
+              {/* Card 1: Get in Touch */}
+              <div className="contact-card">
+                <div className="contact-card-header">
+                  <Headphones size={20} />
+                  <span>Get in Touch</span>
+                </div>
+                <div className="contact-card-body">
+                  {/* Phone */}
+                  <div className="contact-info-item">
+                    <div className="contact-info-icon">
+                      <Phone size={18} />
+                    </div>
+                    <div className="contact-info-text">
+                      <h4>Phone</h4>
+                      <div className="contact-primary-val">+91 98765 43210</div>
+                      <div className="contact-sub-val">(Mon - Fri, 9 AM – 6 PM)</div>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="contact-info-item">
+                    <div className="contact-info-icon">
+                      <Mail size={18} />
+                    </div>
+                    <div className="contact-info-text">
+                      <h4>Email</h4>
+                      <a href="mailto:support@heartcareai.com" className="contact-primary-val contact-link">
+                        support@heartcareai.com
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Location - modified per user request: "change the our office to Location and the location should be Dindigul, Tamil Nadu." */}
+                  <div className="contact-info-item">
+                    <div className="contact-info-icon">
+                      <MapPin size={18} />
+                    </div>
+                    <div className="contact-info-text">
+                      <h4>Location</h4>
+                      <div className="contact-primary-val">Dindigul, Tamil Nadu</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Follow Us */}
+              <div className="contact-card">
+                <div className="contact-card-header">
+                  <Clock size={20} />
+                  <span>Follow Us</span>
+                </div>
+                <div className="contact-card-body social-card-body">
+                  <div className="contact-social-row">
+                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="social-circle-btn" title="LinkedIn">
+                      <LinkedInIcon size={34} />
+                    </a>
+                    <a href="https://github.com" target="_blank" rel="noreferrer" className="social-circle-btn" title="GitHub">
+                      <GitHubIcon size={34} />
+                    </a>
+                    <a href="https://youtube.com" target="_blank" rel="noreferrer" className="social-circle-btn" title="YouTube">
+                      <YouTubeIcon size={34} />
+                    </a>
+                    <a href="https://twitter.com" target="_blank" rel="noreferrer" className="social-circle-btn" title="X (Twitter)">
+                      <TwitterXIcon size={34} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Send a Message Form */}
+            <div className="contact-card contact-form-card">
+              <div className="contact-card-header">
+                <Send size={19} />
+                <span>Send a Message</span>
+              </div>
+              <form className="contact-form-body" onSubmit={handleContactSubmit}>
+                {contactSubmitted && (
+                  <div className="contact-success-banner">
+                    <CheckCircle2 size={18} />
+                    <span>Thank you! Your message has been received. Our clinical support team will respond shortly.</span>
+                  </div>
+                )}
+
+                {/* Row 1: Name and Email */}
+                <div className="contact-input-row">
+                  <div className="contact-input-group">
+                    <div className="contact-input-field-wrapper">
+                      <span className="input-prefix-icon"><User size={16} /></span>
+                      <input
+                        type="text"
+                        placeholder="Your Name *"
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="contact-input-group">
+                    <div className="contact-input-field-wrapper">
+                      <span className="input-prefix-icon"><Mail size={16} /></span>
+                      <input
+                        type="email"
+                        placeholder="Your Email *"
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Subject */}
+                <div className="contact-input-group full-width">
+                  <div className="contact-input-field-wrapper">
+                    <span className="input-prefix-icon"><MessageSquare size={16} /></span>
+                    <input
+                      type="text"
+                      placeholder="Subject *"
+                      value={contactForm.subject}
+                      onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Message */}
+                <div className="contact-input-group full-width">
+                  <div className="contact-input-field-wrapper textarea-wrapper">
+                    <span className="input-prefix-icon textarea-icon"><Edit3 size={16} /></span>
+                    <textarea
+                      placeholder="Your Message *"
+                      rows={5}
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button type="submit" className="btn-send-message" disabled={contactLoading}>
+                  <Send size={16} />
+                  {contactLoading ? 'Sending Message...' : 'Send Message'}
+                </button>
+              </form>
+            </div>
+          </section>
+
+          {/* Bottom Security & Trust Strip */}
+          <div className="contact-trust-strip">
+            <div className="trust-strip-left">
+              <div className="trust-strip-icon">
+                <ShieldCheck size={26} />
+              </div>
+              <div className="trust-strip-text">
+                <h4>Restricted access for authorized medical personnel & cardiology staff</h4>
+                <p>Your data is secure and handled with care.</p>
+              </div>
+            </div>
+
+            <div className="trust-strip-divider"></div>
+
+            <div className="trust-strip-right">
+              <svg className="trust-ecg-svg" viewBox="0 0 100 24" fill="none">
+                <path d="M2 12H32L38 4L44 20L50 6L54 12H98" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="trust-motto">Together for a healthier heart</span>
+              <span className="trust-heart-icon">❤️</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2437,6 +2676,9 @@ export default function App() {
               </li>
               <li>
                 <button type="button" onClick={() => handleNavClick('about')}>About Us</button>
+              </li>
+              <li>
+                <button type="button" onClick={() => handleNavClick('contact')}>Contact Us</button>
               </li>
               <li>
                 <button type="button" onClick={() => handleNavClick('features')}>Features</button>
