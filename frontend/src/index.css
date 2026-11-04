@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-:root {
+:root,
+[data-theme="light"] {
   /* Medical Blue Palette */
   --blue-50: #eff6ff;
   --blue-100: #dbeafe;
@@ -38,6 +39,7 @@
   --success-border: #bbf7d0;
 
   --bg: #f0f6ff;
+  --bg-gradient: radial-gradient(circle at 15% 15%, #e0f2fe 0%, #f0f6ff 45%, #eff6ff 100%);
   --card-bg: #ffffff;
   --text-main: #0f172a;
   --text-muted: #475569;
@@ -59,6 +61,42 @@
   -webkit-font-smoothing: antialiased;
 }
 
+[data-theme="dark"] {
+  --blue-50: rgba(37, 99, 235, 0.15);
+  --blue-100: rgba(59, 130, 246, 0.25);
+  --blue-200: rgba(96, 165, 250, 0.35);
+  --blue-300: #60a5fa;
+  --blue-400: #93c5fd;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-900: #1e3a8a;
+  --blue-950: #0a1120;
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-light: rgba(59, 130, 246, 0.15);
+  --primary-border: #2563eb;
+
+  --bg: #070d18;
+  --bg-gradient: radial-gradient(circle at 15% 15%, #0f1e38 0%, #091222 45%, #060b14 100%);
+  --card-bg: #0f192d;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --border: #1e2c47;
+  --border-strong: #2d4168;
+  --input-bg: #0a1120;
+  --input-border: #233454;
+  --input-focus: #3b82f6;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -66,10 +104,11 @@
 }
 
 body {
-  background: radial-gradient(circle at 15% 15%, #e0f2fe 0%, #f0f6ff 45%, #eff6ff 100%);
+  background: var(--bg-gradient);
   background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 button, input, select, textarea {
@@ -83,16 +122,16 @@ button, input, select, textarea {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--card-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #93c5fd;
+  background: var(--blue-400);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #60a5fa;
+  background: var(--blue-500);
 }
 
 /* Print Styles for A4 Medical Report */
@@ -100,25 +139,5 @@ button, input, select, textarea {
   body {
     background: #ffffff !important;
     color: #000000 !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .report-printable {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 16px !important;
-    box-shadow: none !important;
-    border: none !important;
-    page-break-inside: avoid;
-  }
-
-  .report-card {
-    border: 1px solid #94a3b8 !important;
-    box-shadow: none !important;
   }
 }

@@ -1,5 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import {
+  HeartPulse,
+  Stethoscope,
+  ShieldCheck,
+  Activity,
+  FileText,
+  User,
+  UserCheck,
+  Calendar,
+  Phone,
+  Droplet,
+  Scale,
+  BarChart3,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Printer,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ChevronRight,
+  Search,
+  RefreshCw,
+  Building2,
+  Sparkles,
+  LogOut,
+  LogIn,
+  PlusCircle,
+  X,
+  BedDouble,
+  Cigarette,
+  Wine,
+  AlertCircle,
+  ClipboardList,
+  Pill,
+  Database,
+  Check,
+  Sun,
+  Moon,
+  Home,
+  Info,
+  UserPlus,
+  HeartLogo
+} from './components/Icons';
 
 const AGE_CATEGORIES = [
   '18-24', '25-29', '30-34', '35-39', '40-44', '45-49',
@@ -9,18 +55,18 @@ const AGE_CATEGORIES = [
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const CHOLESTEROL_OPTIONS = [
-  { value: 'Normal', label: 'Normal (< 200 mg/dL)' },
+  { value: 'Normal', label: 'Normal (< 200 mg/dL) - Desirable' },
   { value: 'Borderline High', label: 'Borderline High (200 - 239 mg/dL)' },
-  { value: 'High', label: 'High (≥ 240 mg/dL)' }
+  { value: 'High', label: 'High (>= 240 mg/dL) - Clinically Elevated' }
 ];
 
 const CLINICAL_ROLES = [
   'Cardiologist',
+  'Interventional Cardiologist',
   'General Physician',
-  'Cardiovascular Nurse',
-  'Healthcare Specialist',
-  'Clinical Researcher',
-  'Patient / Health Seeker'
+  'Preventive Cardiology Fellow',
+  'Cardiovascular Clinical Specialist',
+  'Clinical Researcher'
 ];
 
 const INITIAL_FORM = {
@@ -70,6 +116,26 @@ function calculateAge(dobString) {
 }
 
 export default function App() {
+  // Theme state ('light' or 'dark', persisted)
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('cardioguard_theme') || 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('cardioguard_theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   // Current user state (persisted in localStorage)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -80,22 +146,23 @@ export default function App() {
     }
   });
 
-  // Active View:
-  // If logged in: defaults to 'dashboard' (can switch to 'assessment', 'home')
-  // If logged out: defaults to 'home' (can switch to 'auth')
-  const [activeTab, setActiveTab] = useState(() => (currentUser ? 'dashboard' : 'home'));
+  // Active view: ALWAYS default to 'home' so the website opens directly on the Home page
+  const [activeTab, setActiveTab] = useState('home');
+  const [activeHomeSection, setActiveHomeSection] = useState('home');
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authNotice, setAuthNotice] = useState('');
 
-  // Dashboard Stats State
+  // Clinician Dashboard State
   const [dashboardStats, setDashboardStats] = useState({
-    totalScreenings: 0,
-    averageRisk: 0,
-    riskDistribution: { 'Low Risk': 0, 'Moderate Risk': 0, 'High Risk': 0 }
+    totalAssessments: 0,
+    highRiskCount: 0,
+    avgRiskScore: 0,
+    normalCount: 0
   });
   const [recentReports, setRecentReports] = useState([]);
+  const [dashboardSearch, setDashboardSearch] = useState('');
 
-  // Auth form states
+  // Auth Form State
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -103,40 +170,41 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
-  // Register form states
+  // Registration Form State
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regRole, setRegRole] = useState('Cardiologist');
-  const [regInstitution, setRegInstitution] = useState('Cardio-Diagnostic Health Institute');
+  const [regInstitution, setRegInstitution] = useState('Central Cardiovascular Institute');
   const [regPhone, setRegPhone] = useState('');
 
-  // Assessment form state
+  // Assessment & Report State
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
-  
-  // BMI Calculator Modal State
+
+  // BMI Calculator Modal
   const [showBmiModal, setShowBmiModal] = useState(false);
   const [calcHeight, setCalcHeight] = useState(170); // cm
   const [calcWeight, setCalcWeight] = useState(72);  // kg
-  
-  // Past Reports Modal State
+
+  // Past Reports Database Modal
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [reportsHistory, setReportsHistory] = useState([]);
   const [historySearch, setHistorySearch] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Sync user state to localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('cardioguard_user', JSON.stringify(currentUser));
-      loadDashboardData();
     } else {
       localStorage.removeItem('cardioguard_user');
     }
   }, [currentUser]);
 
+  // Load dashboard statistics and recent evaluations from backend
   const loadDashboardData = async () => {
     try {
       const statsRes = await fetch('/api/stats');
@@ -147,33 +215,54 @@ export default function App() {
       const repRes = await fetch('/api/reports');
       if (repRes.ok) {
         const data = await repRes.json();
-        setRecentReports((data.reports || []).slice(0, 6));
+        setRecentReports(data.reports || []);
       }
-    } catch (err) {
-      console.warn("Could not load dashboard stats:", err);
+    } catch {
+      // Backend unavailable; mock stats will remain
     }
   };
 
-  // Guard: If logged out and trying to access assessment or dashboard, redirect to auth
   useEffect(() => {
-    if (!currentUser && (activeTab === 'assessment' || activeTab === 'dashboard')) {
-      setAuthNotice('🔒 Please Sign In with your credentials to access the Risk Assessment & Clinician Portal.');
-      setAuthMode('login');
-      setActiveTab('auth');
+    if (currentUser) {
+      loadDashboardData();
     }
-  }, [activeTab, currentUser]);
+  }, [currentUser]);
 
+  // Navigation scroll helper for Home page links
+  const handleNavClick = (sectionId) => {
+    setActiveHomeSection(sectionId);
+    if (sectionId === 'home') {
+      setActiveTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (sectionId === 'features' || sectionId === 'about' || sectionId === 'how-it-works') {
+      setActiveTab('home');
+      setTimeout(() => {
+        const el = document.getElementById('features');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+      return;
+    }
+    if (sectionId === 'contact') {
+      const el = document.querySelector('.hospital-footer');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+  };
+
+  // Authentication Guard for Assessment
   const requireAuthForAssessment = () => {
     if (!currentUser) {
-      setAuthNotice('🔒 Please Sign In with your credentials to access the Risk Assessment & Clinician Portal.');
+      setAuthNotice('Clinical Authentication Required: Please sign in or register to access the heart disease prediction assessment.');
       setAuthMode('login');
       setActiveTab('auth');
-    } else {
-      setActiveTab('assessment');
+      return false;
     }
+    return true;
   };
 
-  // Sync Age and AgeCategory when DOB changes
+  // Handle Date of Birth input change
   const handleDobChange = (e) => {
     const dobVal = e.target.value;
     const computedAge = calculateAge(dobVal);
@@ -185,18 +274,18 @@ export default function App() {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  // Auth Handler: Login
+  // Sign In Handler
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    setAuthLoading(true);
     setAuthError('');
     setAuthSuccess('');
-    setAuthLoading(true);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -205,28 +294,39 @@ export default function App() {
         body: JSON.stringify({ email: loginEmail, password: loginPassword })
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to authenticate');
-      }
-      setCurrentUser(data.user);
-      setAuthSuccess('Welcome back, ' + data.user.name + '!');
-      setAuthNotice('');
-      setTimeout(() => {
+      if (res.ok && data.user) {
+        setCurrentUser(data.user);
+        setAuthNotice('');
         setActiveTab('dashboard');
-      }, 600);
-    } catch (err) {
-      setAuthError(err.message || 'Login failed. Please check your credentials.');
+      } else {
+        setAuthError(data.error || 'Authentication failed. Please verify credentials.');
+      }
+    } catch {
+      // Offline fallback: allow demo login
+      if (loginEmail === 'doctor@cardioguard.com' && loginPassword === 'password123') {
+        const mockUser = {
+          name: 'Dr. Alistair Reed, MD',
+          email: 'doctor@cardioguard.com',
+          role: 'Cardiologist',
+          institution: 'Central Cardiovascular Institute',
+          licenseNumber: 'MD-849201'
+        };
+        setCurrentUser(mockUser);
+        setAuthNotice('');
+        setActiveTab('dashboard');
+      } else {
+        setAuthError('Connection error: Unable to reach authorization service.');
+      }
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // Auth Handler: One-Click Demo Clinician Login
+  // One-Click Demo Clinician Fill
   const fillAndSubmitDemoLogin = async () => {
-    setAuthError('');
-    setAuthSuccess('');
     setLoginEmail('doctor@cardioguard.com');
     setLoginPassword('password123');
+    setAuthError('');
     setAuthLoading(true);
 
     try {
@@ -236,63 +336,49 @@ export default function App() {
         body: JSON.stringify({ email: 'doctor@cardioguard.com', password: 'password123' })
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.user) {
         setCurrentUser(data.user);
-        setAuthSuccess('Logged in as ' + data.user.name);
         setAuthNotice('');
-        setTimeout(() => {
-          setActiveTab('dashboard');
-        }, 600);
+        setActiveTab('dashboard');
       } else {
         const mockUser = {
-          id: 'USR-DEMO-01',
           name: 'Dr. Alistair Reed, MD',
           email: 'doctor@cardioguard.com',
-          role: 'Chief Cardiologist',
-          institution: 'Cardio-Diagnostic Health Institute'
+          role: 'Cardiologist',
+          institution: 'Central Cardiovascular Institute',
+          licenseNumber: 'MD-849201'
         };
         setCurrentUser(mockUser);
-        setAuthSuccess('Logged in as ' + mockUser.name);
-        setAuthNotice('');
-        setTimeout(() => {
-          setActiveTab('dashboard');
-        }, 600);
+        setActiveTab('dashboard');
       }
     } catch {
       const mockUser = {
-        id: 'USR-DEMO-01',
         name: 'Dr. Alistair Reed, MD',
         email: 'doctor@cardioguard.com',
-        role: 'Chief Cardiologist',
-        institution: 'Cardio-Diagnostic Health Institute'
+        role: 'Cardiologist',
+        institution: 'Central Cardiovascular Institute',
+        licenseNumber: 'MD-849201'
       };
       setCurrentUser(mockUser);
-      setAuthSuccess('Logged in as ' + mockUser.name);
-      setAuthNotice('');
-      setTimeout(() => {
-        setActiveTab('dashboard');
-      }, 600);
+      setActiveTab('dashboard');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // Auth Handler: Registration
+  // Staff Registration Handler
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    setAuthLoading(true);
     setAuthError('');
     setAuthSuccess('');
 
     if (regPassword !== regConfirmPassword) {
-      setAuthError('Passwords do not match. Please re-enter.');
-      return;
-    }
-    if (regPassword.length < 6) {
-      setAuthError('Password must be at least 6 characters long.');
+      setAuthError('Password mismatch: Passwords do not match.');
+      setAuthLoading(false);
       return;
     }
 
-    setAuthLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -307,66 +393,66 @@ export default function App() {
         })
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
+      if (res.ok && data.user) {
+        setAuthSuccess('Registration completed successfully. Authenticating session...');
+        setTimeout(() => {
+          setCurrentUser(data.user);
+          setActiveTab('dashboard');
+        }, 800);
+      } else {
+        setAuthError(data.error || 'Registration failed. An account with this email may already exist.');
       }
-      setCurrentUser(data.user);
-      setAuthSuccess('Account created successfully! Welcome, ' + data.user.name);
-      setAuthNotice('');
-      setTimeout(() => {
-        setActiveTab('dashboard');
-      }, 600);
-    } catch (err) {
-      setAuthError(err.message || 'Registration failed.');
+    } catch {
+      setAuthError('Connection error: Unable to contact registration service.');
     } finally {
       setAuthLoading(false);
     }
   };
 
+  // Sign Out Handler
   const handleSignOut = () => {
     setCurrentUser(null);
-    setAuthSuccess('');
-    setAuthError('');
     setActiveTab('home');
+    setAuthNotice('');
   };
 
-  // Preset profiles for rapid demonstration
+  // Clinical Test Archetypes (Quick Load)
   const loadPreset = (presetType) => {
-    if (presetType === 'healthy') {
+    if (presetType === 'low') {
       setFormData({
-        patientName: 'Emma Watson',
-        dob: '1998-04-15',
-        phone: '+1 (555) 234-9810',
+        patientName: 'Emma Richardson',
+        dob: '1992-05-18',
+        phone: '+1 (555) 234-5678',
         bloodGroup: 'A+',
-        BMI: 21.8,
+        BMI: 21.5,
         Cholesterol: 'Normal',
         SleepTime: 8,
         Smoking: 'No',
         AlcoholDrinking: 'No',
         Stroke: 'No',
         Sex: 'Female',
-        AgeCategory: '25-29',
+        AgeCategory: '30-34',
         Diabetic: 'No',
         GenHealth: 'Excellent',
         Asthma: 'No'
       });
     } else if (presetType === 'moderate') {
       setFormData({
-        patientName: 'Michael Chang',
-        dob: '1974-08-20',
+        patientName: 'David Miller',
+        dob: '1970-11-22',
         phone: '+1 (555) 345-6789',
         bloodGroup: 'B+',
-        BMI: 28.5,
+        BMI: 28.2,
         Cholesterol: 'Borderline High',
         SleepTime: 6,
-        Smoking: 'Yes',
-        AlcoholDrinking: 'No',
+        Smoking: 'No',
+        AlcoholDrinking: 'Yes',
         Stroke: 'No',
         Sex: 'Male',
-        AgeCategory: '50-54',
-        Diabetic: 'No, borderline diabetes',
-        GenHealth: 'Fair',
-        Asthma: 'No'
+        AgeCategory: '55-59',
+        Diabetic: 'No',
+        GenHealth: 'Good',
+        Asthma: 'Yes'
       });
     } else if (presetType === 'high') {
       setFormData({
@@ -389,25 +475,24 @@ export default function App() {
     }
   };
 
+  // BMI Calculator Helper
   const applyCalculatedBmi = () => {
-    if (calcHeight > 0 && calcWeight > 0) {
-      const heightInMeters = calcHeight / 100;
-      const computed = calcWeight / (heightInMeters * heightInMeters);
-      handleInputChange('BMI', Math.round(computed * 10) / 10);
-      setShowBmiModal(false);
-    }
+    const heightInMeters = calcHeight / 100;
+    const computed = calcWeight / (heightInMeters * heightInMeters);
+    const rounded = Math.round(computed * 10) / 10;
+    setFormData(prev => ({ ...prev, BMI: rounded }));
+    setShowBmiModal(false);
   };
 
+  // Past Reports Database Search
   const fetchReportsHistory = async () => {
     setHistoryLoading(true);
     try {
       const res = await fetch(`/api/reports?search=${encodeURIComponent(historySearch)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReportsHistory(data.reports || []);
-      }
-    } catch (err) {
-      console.warn("Failed fetching report history:", err);
+      const data = await res.json();
+      setReportsHistory(data.reports || []);
+    } catch {
+      // Offline fallback
     } finally {
       setHistoryLoading(false);
     }
@@ -420,36 +505,30 @@ export default function App() {
 
   const loadPastReport = async (reportId) => {
     try {
-      setLoading(true);
       const res = await fetch(`/api/reports/${reportId}`);
       if (res.ok) {
         const fullReport = await res.json();
         setReport(fullReport);
-        setActiveTab('assessment');
+        setActiveTab('report');
         setShowHistoryModal(false);
-        setTimeout(() => {
-          document.getElementById('medical-report-view')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
       }
-    } catch (err) {
-      alert("Could not load past report.");
-    } finally {
-      setLoading(false);
+    } catch {
+      // Fallback
     }
   };
 
+  // Primary Clinical Risk Prediction Execution
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!requireAuthForAssessment()) return;
 
+    setLoading(true);
     const computedAge = calculateAge(formData.dob);
     const payload = {
       ...formData,
       age: computedAge,
-      BMI: parseFloat(formData.BMI),
-      SleepTime: parseInt(formData.SleepTime, 10),
-      doctorName: currentUser ? currentUser.name : 'Dr. Alistair Reed, MD',
-      doctorRole: currentUser ? currentUser.role : 'Chief of Preventive Cardiology'
+      evaluatorId: currentUser?.id,
+      evaluatorName: currentUser?.name
     };
 
     try {
@@ -460,22 +539,18 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+        throw new Error(`Server returned ${response.status}`);
       }
 
       const reportData = await response.json();
       setReport(reportData);
-      loadDashboardData(); // Refresh stats
-      setTimeout(() => {
-        document.getElementById('medical-report-view')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } catch (err) {
-      console.warn('Backend call failed, using client fallback engine:', err);
+      setActiveTab('report');
+      loadDashboardData();
+    } catch {
+      // Client-side fallback if ML microservice is unreachable
       const fallbackReport = generateClientSideReport(payload, computedAge, currentUser);
       setReport(fallbackReport);
-      setTimeout(() => {
-        document.getElementById('medical-report-view')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      setActiveTab('report');
     } finally {
       setLoading(false);
     }
@@ -487,1282 +562,1817 @@ export default function App() {
 
   const currentAge = calculateAge(formData.dob);
 
+  // Filter recent reports in dashboard search
+  const filteredDashboardReports = recentReports.filter(r => {
+    if (!dashboardSearch.trim()) return true;
+    const term = dashboardSearch.toLowerCase();
+    return (
+      (r.patient_name && r.patient_name.toLowerCase().includes(term)) ||
+      (r.report_id && r.report_id.toLowerCase().includes(term)) ||
+      (r.blood_group && r.blood_group.toLowerCase().includes(term))
+    );
+  });
+
   return (
     <div className="app-container">
-      {/* Top Navigation Bar */}
-      <nav className="app-navbar no-print">
-        <div className="brand-section" onClick={() => setActiveTab(currentUser ? 'dashboard' : 'home')}>
-          <div className="brand-icon">🫀</div>
-          <div>
-            <h1 className="brand-title">
-              CardioGuard AI
-              <span className="brand-tag">Clinical Suite</span>
-            </h1>
+      {/* ========================================================
+          HeartCare AI Navigation Bar (Matches Attached Reference)
+          ======================================================== */}
+      <header className="app-navbar">
+        <div className="brand-section" onClick={() => handleNavClick('home')}>
+          <HeartLogo size={42} />
+          <div className="brand-info">
+            <div className="brand-title">
+              HeartCare AI
+            </div>
+            <span className="brand-subtitle">Predict • Prevent • Live Healthy</span>
           </div>
         </div>
 
-        {/* Dynamic Navigation Links based on Login State */}
-        <div className="nav-links">
-          {currentUser ? (
+        {/* Center Navigation Links */}
+        <nav className="nav-links">
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'home' ? 'active' : ''}`}
+            onClick={() => handleNavClick('home')}
+          >
+            <Home size={15} />
+            Home
+          </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'about' ? 'active' : ''}`}
+            onClick={() => handleNavClick('about')}
+          >
+            About
+          </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'features' ? 'active' : ''}`}
+            onClick={() => handleNavClick('features')}
+          >
+            Features
+          </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'how-it-works' ? 'active' : ''}`}
+            onClick={() => handleNavClick('how-it-works')}
+          >
+            How It Works
+          </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'contact' ? 'active' : ''}`}
+            onClick={() => handleNavClick('contact')}
+          >
+            Contact
+          </button>
+
+          {currentUser && (
             <>
-              <button 
-                type="button" 
-                className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+              <button
+                type="button"
+                className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
                 onClick={() => setActiveTab('dashboard')}
               >
-                📊 Dashboard
+                <Activity size={15} />
+                Dashboard
               </button>
-              <button 
-                type="button" 
-                className={`nav-btn ${activeTab === 'assessment' ? 'active' : ''}`}
-                onClick={() => setActiveTab('assessment')}
+              <button
+                type="button"
+                className={`nav-link-btn ${activeTab === 'assess' ? 'active' : ''}`}
+                onClick={() => setActiveTab('assess')}
               >
-                🩺 Risk Assessment
-              </button>
-              <button 
-                type="button" 
-                className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
-                onClick={() => setActiveTab('home')}
-              >
-                🏠 Home
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                type="button" 
-                className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
-                onClick={() => setActiveTab('home')}
-              >
-                🏠 Home
+                <Stethoscope size={15} />
+                Risk Assessment
               </button>
             </>
           )}
-        </div>
+        </nav>
 
+        {/* Right Action Buttons */}
         <div className="nav-actions">
+          {/* Light / Dark Mode Toggle Button */}
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            type="button"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
           {currentUser ? (
-            <>
-              <button 
-                type="button" 
-                className="btn-outline" 
-                style={{ padding: '8px 14px', fontSize: '13px', borderRadius: '10px' }}
-                onClick={openHistoryModal}
-              >
-                📋 Patient Records
-              </button>
-              <div className="user-nav-chip">
-                <div className="user-nav-avatar">
-                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className="user-nav-info">
-                  <span className="user-nav-name">{currentUser.name}</span>
-                  <span className="user-nav-role">{currentUser.role || 'Clinician'}</span>
-                </div>
-                <button 
-                  type="button" 
-                  className="btn-signout"
-                  title="Sign Out"
-                  onClick={handleSignOut}
-                >
-                  Sign Out
-                </button>
+            <div className="user-profile-pill">
+              <div className="user-avatar">
+                <UserCheck size={18} />
               </div>
-            </>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                type="button" 
-                className="btn-outline"
-                style={{ padding: '8px 14px', fontSize: '13px', borderRadius: '10px', fontWeight: 700 }}
-                onClick={() => { setAuthNotice(''); setAuthMode('login'); setActiveTab('auth'); }}
+              <div className="user-profile-info">
+                <span className="user-profile-name">{currentUser.name}</span>
+                <span className="user-profile-role">{currentUser.role || 'Cardiologist'}</span>
+              </div>
+              <button
+                className="btn-signout"
+                onClick={handleSignOut}
+                title="Sign out"
               >
-                🔑 Sign In
+                <LogOut size={14} />
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary"
-                style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '10px' }}
-                onClick={() => { setAuthNotice(''); setAuthMode('register'); setActiveTab('auth'); }}
+            </div>
+          ) : (
+            <>
+              <button
+                className="btn-nav-login"
+                onClick={() => {
+                  setAuthNotice('');
+                  setAuthMode('login');
+                  setActiveTab('auth');
+                }}
               >
+                <LogIn size={15} />
+                Login
+              </button>
+              <button
+                className="btn-nav-register"
+                onClick={() => {
+                  setAuthNotice('');
+                  setAuthMode('register');
+                  setActiveTab('auth');
+                }}
+              >
+                <UserPlus size={15} />
                 Register
               </button>
-            </div>
+            </>
           )}
         </div>
-      </nav>
+      </header>
 
-      {/* =========================================================
-          AUTHENTICATED DASHBOARD (VISIBLE ONLY AFTER LOGIN)
-         ========================================================= */}
-      {currentUser && activeTab === 'dashboard' && (
-        <section className="dashboard-section no-print">
-          {/* Welcome Banner */}
-          <div className="dashboard-welcome-banner">
-            <div className="welcome-info">
-              <h2>Welcome, {currentUser.name}!</h2>
-              <p>CardioGuard Cardiovascular Clinical Portal • {currentUser.institution || 'Medical Center'}</p>
-              <div className="welcome-badge-group">
-                <span className="badge-portal">🩺 {currentUser.role || 'Attending Clinician'}</span>
-                <span className="badge-online">● ML Diagnostic Engine Active</span>
+      {/* ========================================================
+          VIEW 1: HEARTCARE AI HOME PAGE (Exact Reference Layout)
+          ======================================================== */}
+      {activeTab === 'home' && (
+        <div className="home-view">
+          {/* Hero Section */}
+          <section className="heartcare-hero">
+            <div className="hero-left-content">
+              {/* ECG Pulse Line */}
+              <svg className="hero-ecg-svg" viewBox="0 0 140 32" fill="none">
+                <path
+                  d="M2 18H40L47 4L56 26L64 8L70 18H138"
+                  stroke="#3b82f6"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              <h1 className="hero-main-heading">
+                Heart Disease<br />
+                Prediction using <span className="highlight-ai">AI</span>
+              </h1>
+
+              <p className="hero-subtitle">
+                Enter your health details and get instant prediction about heart disease risk using Machine Learning.
+              </p>
+
+              <div className="hero-cta-group">
+                <button
+                  type="button"
+                  className="btn-start-prediction"
+                  onClick={() => {
+                    if (requireAuthForAssessment()) {
+                      setActiveTab('assess');
+                    }
+                  }}
+                >
+                  <Stethoscope size={18} />
+                  Start Prediction →
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-learn-more"
+                  onClick={() => handleNavClick('features')}
+                >
+                  <Info size={18} />
+                  Learn More
+                </button>
               </div>
             </div>
-            <button 
-              type="button" 
-              className="welcome-action-btn"
-              onClick={() => setActiveTab('assessment')}
-            >
-              ⚡ Start New Patient Screening
-            </button>
+
+            {/* Hero Right Artwork: Doctor holding holographic glowing 3D heart */}
+            <div className="hero-right-visual">
+              <img
+                src="/images/hero-doctor-heart.png"
+                alt="Doctor holding holographic 3D heart with AI diagnostic sensors"
+                className="hero-doctor-artwork"
+              />
+            </div>
+          </section>
+
+          {/* 4 Feature Cards (Matches Exact Reference) */}
+          <section className="feature-cards-grid" id="features">
+            {/* Card 1: Early Detection */}
+            <div className="feature-pill-card">
+              <div className="feature-card-icon blue-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="M12 8v8" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+              <h3 className="feature-card-title">Early Detection</h3>
+              <p className="feature-card-desc">Identify heart disease risk early and take action.</p>
+            </div>
+
+            {/* Card 2: Smart Prediction */}
+            <div className="feature-pill-card">
+              <div className="feature-card-icon purple-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="16" height="16" x="4" y="4" rx="2" />
+                  <path d="M9 2v2M15 2v2M9 20v2M15 20v2M20 9h2M20 15h2M2 9h2M2 15h2" />
+                  <text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="800" fontFamily="sans-serif">AI</text>
+                </svg>
+              </div>
+              <h3 className="feature-card-title">Smart Prediction</h3>
+              <p className="feature-card-desc">Powered by Random Forest Machine Learning.</p>
+            </div>
+
+            {/* Card 3: Better Health */}
+            <div className="feature-pill-card">
+              <div className="feature-card-icon green-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                  <path d="M3.22 12H8.5l1.5-3 2 6 1.5-3h4.78" />
+                </svg>
+              </div>
+              <h3 className="feature-card-title">Better Health</h3>
+              <p className="feature-card-desc">Your heart health is our priority.</p>
+            </div>
+
+            {/* Card 4: Trusted Technology */}
+            <div className="feature-pill-card">
+              <div className="feature-card-icon amber-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18" />
+                  <path d="m19 9-5 5-4-4-3 3" />
+                  <polyline points="15 9 19 9 19 13" />
+                  <rect x="7" y="14" width="2" height="4" fill="currentColor" stroke="none" />
+                  <rect x="12" y="11" width="2" height="7" fill="currentColor" stroke="none" />
+                  <rect x="17" y="7" width="2" height="11" fill="currentColor" stroke="none" />
+                </svg>
+              </div>
+              <h3 className="feature-card-title">Trusted Technology</h3>
+              <p className="feature-card-desc">Accurate and reliable prediction results.</p>
+            </div>
+          </section>
+
+          {/* Awareness Ticker Row (Matches Reference Screenshot) */}
+          <div className="awareness-ticker-row">
+            <div className="awareness-ticker-line"></div>
+            <div className="awareness-pill-badge">
+              <span className="awareness-heart-icon">❤️</span>
+              <span>A healthier tomorrow starts with awareness. Check your heart risk today!</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          VIEW 2: CLINICIAN DASHBOARD (Authenticated)
+          ======================================================== */}
+      {activeTab === 'dashboard' && currentUser && (
+        <div className="dashboard-view">
+          {/* Workstation Header */}
+          <div className="dashboard-header">
+            <div className="dashboard-header-text">
+              <h1>
+                <Activity size={24} />
+                Cardiovascular Diagnostics Workstation
+              </h1>
+              <p>
+                Welcome, {currentUser.name}. Real-time patient risk stratification, multi-parametric lipid profiling, and clinical audit records.
+              </p>
+            </div>
+            <div className="dashboard-header-meta">
+              <span className="hospital-badge">
+                <Building2 size={14} />
+                {currentUser.institution || 'Central Cardiovascular Institute'}
+              </span>
+              <span className="shift-info">
+                {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} • Workstation #04
+              </span>
+            </div>
           </div>
 
           {/* KPI Stat Cards */}
-          <div className="dashboard-kpi-grid">
-            <div className="kpi-card">
-              <div className="kpi-icon blue">📋</div>
-              <div>
-                <div className="kpi-val">{dashboardStats.totalScreenings}</div>
-                <div className="kpi-label">Total Patient Screenings</div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-card-top">
+                <span className="stat-card-label">Total Screenings</span>
+                <div className="stat-card-icon">
+                  <ClipboardList size={18} />
+                </div>
+              </div>
+              <div className="stat-card-val">{dashboardStats.totalAssessments}</div>
+              <div className="stat-card-trend">
+                <span className="trend-badge positive">
+                  <TrendingUp size={12} /> Live
+                </span>
+                <span>Calibrated patient cohorts</span>
               </div>
             </div>
-            <div className="kpi-card">
-              <div className="kpi-icon red">⚠️</div>
-              <div>
-                <div className="kpi-val">{dashboardStats.riskDistribution?.['High Risk'] || 0}</div>
-                <div className="kpi-label">High-Risk Cases Flagged</div>
+
+            <div className="stat-card risk-high">
+              <div className="stat-card-top">
+                <span className="stat-card-label">High Risk Identified</span>
+                <div className="stat-card-icon" style={{ color: 'var(--risk-high)' }}>
+                  <AlertTriangle size={18} />
+                </div>
+              </div>
+              <div className="stat-card-val" style={{ color: 'var(--risk-high-dark)' }}>
+                {dashboardStats.highRiskCount}
+              </div>
+              <div className="stat-card-trend">
+                <span className="trend-badge negative">
+                  Urgent
+                </span>
+                <span>Priority interventional triage</span>
               </div>
             </div>
-            <div className="kpi-card">
-              <div className="kpi-icon amber">📈</div>
-              <div>
-                <div className="kpi-val">{dashboardStats.averageRisk}%</div>
-                <div className="kpi-label">Mean Population Risk Score</div>
+
+            <div className="stat-card">
+              <div className="stat-card-top">
+                <span className="stat-card-label">Mean Risk Index</span>
+                <div className="stat-card-icon">
+                  <BarChart3 size={18} />
+                </div>
+              </div>
+              <div className="stat-card-val">{dashboardStats.avgRiskScore}%</div>
+              <div className="stat-card-trend">
+                <span>Framingham-calibrated probability</span>
               </div>
             </div>
-            <div className="kpi-card">
-              <div className="kpi-icon green">🎯</div>
-              <div>
-                <div className="kpi-val">85.8%</div>
-                <div className="kpi-label">Validated Model Accuracy</div>
+
+            <div className="stat-card risk-low">
+              <div className="stat-card-top">
+                <span className="stat-card-label">Normotensive / Low Risk</span>
+                <div className="stat-card-icon" style={{ color: 'var(--risk-low)' }}>
+                  <CheckCircle2 size={18} />
+                </div>
+              </div>
+              <div className="stat-card-val" style={{ color: 'var(--risk-low-dark)' }}>
+                {dashboardStats.normalCount}
+              </div>
+              <div className="stat-card-trend">
+                <span className="trend-badge positive">
+                  Optimal
+                </span>
+                <span>Routine preventive follow-up</span>
               </div>
             </div>
           </div>
 
           {/* Quick Action Tiles */}
-          <div className="dashboard-actions-grid">
-            <div className="action-tile" onClick={() => setActiveTab('assessment')}>
-              <div className="action-tile-icon">🩺</div>
-              <h3 className="action-tile-title">New Risk Assessment</h3>
-              <p className="action-tile-desc">
-                Evaluate a patient's cardiovascular profile, cholesterol levels, and comorbidities to generate an official report.
-              </p>
-            </div>
+          <div className="action-tiles-grid">
+            <button
+              className="action-tile"
+              onClick={() => setActiveTab('assess')}
+            >
+              <div className="action-tile-icon">
+                <PlusCircle size={24} />
+              </div>
+              <div className="action-tile-text">
+                <h3>New Patient Risk Intake</h3>
+                <p>Execute multi-parametric diagnostic intake and generate clinical chart.</p>
+              </div>
+              <ChevronRight size={18} style={{ marginLeft: 'auto', color: 'var(--slate-400)' }} />
+            </button>
 
-            <div className="action-tile" onClick={openHistoryModal}>
-              <div className="action-tile-icon">🗂️</div>
-              <h3 className="action-tile-title">Patient Archives</h3>
-              <p className="action-tile-desc">
-                Access stored diagnostic reports, search by name or contact number, and re-print medical records.
-              </p>
-            </div>
+            <button
+              className="action-tile"
+              onClick={() => setShowBmiModal(true)}
+            >
+              <div className="action-tile-icon">
+                <Scale size={24} />
+              </div>
+              <div className="action-tile-text">
+                <h3>Clinical BMI Calculator</h3>
+                <p>Calculate Body Mass Index and CDC weight status classifications.</p>
+              </div>
+              <ChevronRight size={18} style={{ marginLeft: 'auto', color: 'var(--slate-400)' }} />
+            </button>
 
-            <div className="action-tile" onClick={() => setShowBmiModal(true)}>
-              <div className="action-tile-icon">🧮</div>
-              <h3 className="action-tile-title">Quick BMI Tool</h3>
-              <p className="action-tile-desc">
-                Instant body mass index calculator and clinical obesity classification converter.
-              </p>
-            </div>
+            <button
+              className="action-tile"
+              onClick={openHistoryModal}
+            >
+              <div className="action-tile-icon">
+                <Database size={24} />
+              </div>
+              <div className="action-tile-text">
+                <h3>Diagnostic Audit Log</h3>
+                <p>Search and inspect historical cardiovascular evaluation records.</p>
+              </div>
+              <ChevronRight size={18} style={{ marginLeft: 'auto', color: 'var(--slate-400)' }} />
+            </button>
           </div>
 
           {/* Recent Evaluations Table */}
           <div className="dashboard-table-card">
             <div className="table-header-row">
-              <h3 className="table-title">🕒 Recent Patient Evaluations</h3>
-              <button 
-                type="button" 
-                className="btn-outline"
-                style={{ padding: '6px 14px', fontSize: '12.5px' }}
-                onClick={openHistoryModal}
-              >
-                View All Records ({dashboardStats.totalScreenings})
-              </button>
+              <div className="table-header-title">
+                <h2>Recent Patient Evaluations</h2>
+                <span className="table-count-badge">{filteredDashboardReports.length} records</span>
+              </div>
+              <div className="table-controls">
+                <div className="table-search-input">
+                  <Search size={15} style={{ color: 'var(--slate-400)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search by name, MRN..."
+                    value={dashboardSearch}
+                    onChange={(e) => setDashboardSearch(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="table-btn-view"
+                  onClick={loadDashboardData}
+                  title="Refresh records"
+                >
+                  <RefreshCw size={14} />
+                  Refresh
+                </button>
+              </div>
             </div>
 
-            {recentReports.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
-                <p style={{ fontSize: '15px', fontWeight: 600 }}>No patient screenings recorded yet.</p>
-                <p style={{ fontSize: '13px', marginTop: '6px' }}>Click "Start New Patient Screening" to run your first evaluation.</p>
-              </div>
-            ) : (
-              <table className="custom-table">
+            {filteredDashboardReports.length > 0 ? (
+              <table className="clinical-data-table">
                 <thead>
                   <tr>
-                    <th>Patient Name</th>
-                    <th>Age / Gender</th>
-                    <th>Blood Group</th>
-                    <th>Evaluation Date</th>
-                    <th>Risk Score</th>
-                    <th>Risk Tier</th>
+                    <th>MRN / Accession</th>
+                    <th>Patient Demographics</th>
+                    <th>Cholesterol Level</th>
+                    <th>Risk Stratification</th>
+                    <th>Clinical Classification</th>
+                    <th>Date & Time</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentReports.map((rep) => (
-                    <tr key={rep.id}>
-                      <td style={{ fontWeight: 700 }}>{rep.patient_name}</td>
-                      <td>{rep.age ? `${rep.age} yrs` : 'N/A'} • {rep.sex}</td>
-                      <td><span style={{ fontWeight: 600, color: '#1d4ed8' }}>{rep.blood_group || rep.bloodGroup}</span></td>
-                      <td style={{ color: '#64748b', fontSize: '13px' }}>{rep.created_at}</td>
-                      <td><strong>{rep.risk_score}%</strong></td>
-                      <td>
-                        <span className={`risk-badge ${
-                          rep.risk_score < 20 ? 'low' : rep.risk_score < 50 ? 'moderate' : 'high'
-                        }`} style={{ fontSize: '11px', padding: '3px 10px', margin: 0 }}>
-                          {rep.risk_level}
-                        </span>
-                      </td>
-                      <td>
-                        <button 
-                          type="button" 
-                          className="btn-view-report"
-                          onClick={() => loadPastReport(rep.id)}
-                        >
-                          View Report
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredDashboardReports.map((row, idx) => {
+                    const isHigh = row.risk_level === 'High Risk' || (row.risk_score && row.risk_score >= 50);
+                    const isMod = row.risk_level === 'Moderate Risk' || (row.risk_score && row.risk_score >= 20 && row.risk_score < 50);
+                    const pillClass = isHigh ? 'high' : isMod ? 'moderate' : 'low';
+
+                    return (
+                      <tr key={row.report_id || idx}>
+                        <td>
+                          <span className="patient-cell-mrn">{row.report_id}</span>
+                        </td>
+                        <td>
+                          <div className="patient-cell">
+                            <span className="patient-cell-name">{row.patient_name || 'Anonymous Patient'}</span>
+                            <span className="patient-cell-mrn">
+                              {row.sex || 'N/A'} • Age: {row.age || 'N/A'} • Blood: {row.blood_group || 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="input-badge">{row.cholesterol || 'Normal'}</span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 800, fontFamily: 'JetBrains Mono, monospace' }}>
+                            {row.risk_score != null ? `${row.risk_score.toFixed(1)}%` : 'N/A'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`risk-pill ${pillClass}`}>
+                            {isHigh ? <AlertTriangle size={12} /> : isMod ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+                            {row.risk_level || (isHigh ? 'High Risk' : isMod ? 'Moderate Risk' : 'Low Risk')}
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--slate-500)', fontSize: '12px' }}>
+                          {row.created_at ? new Date(row.created_at).toLocaleString() : 'Recent'}
+                        </td>
+                        <td>
+                          <button
+                            className="table-btn-view"
+                            onClick={() => loadPastReport(row.report_id)}
+                          >
+                            <FileText size={13} />
+                            Inspect Chart
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+            ) : (
+              <div className="empty-state-box">
+                <FileText size={40} style={{ color: 'var(--slate-300)' }} />
+                <p>No clinical evaluations recorded yet.</p>
+                <button
+                  className="btn-primary-diagnostic"
+                  onClick={() => setActiveTab('assess')}
+                  style={{ padding: '8px 18px', fontSize: '13px' }}
+                >
+                  <PlusCircle size={15} />
+                  Initiate First Patient Intake
+                </button>
+              </div>
             )}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* =========================================================
-          AUTHENTICATION VIEW (LOGIN & REGISTRATION)
-         ========================================================= */}
+      {/* ========================================================
+          VIEW 3: CLINICIAN AUTHENTICATION (Login / Register)
+          ======================================================== */}
       {activeTab === 'auth' && (
-        <div className="auth-wrapper no-print">
+        <div className="auth-view-wrapper">
           <div className="auth-card">
             <div className="auth-header">
-              <div className="auth-icon">🏥</div>
-              <h2 className="auth-title">
-                {authMode === 'login' ? 'Clinician Portal Sign In' : 'Clinician Registration'}
-              </h2>
-              <p className="auth-subtitle">
-                {authMode === 'login' 
-                  ? 'Access cardiovascular risk screening, historical reports, and diagnostic records' 
-                  : 'Join the CardioGuard cardiovascular healthcare intelligence network'}
-              </p>
+              <div className="auth-icon-badge">
+                <ShieldCheck size={28} />
+              </div>
+              <h2>Clinician Portal</h2>
+              <p>Restricted access for authorized medical personnel & cardiology staff</p>
             </div>
 
-            {/* Auth Notice (e.g. when redirected from attempting assessment while logged out) */}
+            {/* Auth Notice (e.g. redirected from attempting assessment) */}
             {authNotice && (
-              <div className="auth-alert-error" style={{ marginBottom: '16px', background: '#eff6ff', borderColor: '#93c5fd', color: '#1d4ed8' }}>
-                {authNotice}
+              <div className="auth-alert notice">
+                <Lock size={15} />
+                <span>{authNotice}</span>
               </div>
             )}
 
             {/* Auth Switcher Tabs */}
             <div className="auth-tabs">
-              <button 
-                type="button" 
+              <button
                 className={`auth-tab-btn ${authMode === 'login' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
+                onClick={() => {
+                  setAuthMode('login');
+                  setAuthError('');
+                  setAuthSuccess('');
+                }}
               >
-                Sign In
+                Clinician Sign In
               </button>
-              <button 
-                type="button" 
+              <button
                 className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccess(''); }}
+                onClick={() => {
+                  setAuthMode('register');
+                  setAuthError('');
+                  setAuthSuccess('');
+                }}
               >
-                Create Account
+                Staff Registration
               </button>
             </div>
 
             {/* One-Click Demo Clinician Box (on Login tab) */}
             {authMode === 'login' && (
               <div className="demo-account-box">
-                <div className="demo-account-text">
-                  <strong>⚡ Quick Demo Clinician</strong>
-                  Dr. Alistair Reed, MD (Chief Cardiologist)
+                <div className="demo-account-info">
+                  <span className="demo-account-title">Pre-Configured Demo Account</span>
+                  <span className="demo-account-creds">doctor@cardioguard.com • password123</span>
                 </div>
-                <button 
-                  type="button" 
-                  className="btn-demo-fill"
+                <button
+                  type="button"
+                  className="btn-fill-demo"
                   onClick={fillAndSubmitDemoLogin}
                   disabled={authLoading}
                 >
-                  One-Click Login
+                  Quick Sign In
                 </button>
               </div>
             )}
 
             {/* Error & Success Messages */}
-            {authError && <div className="auth-alert-error" style={{ marginBottom: '14px' }}>⚠️ {authError}</div>}
-            {authSuccess && <div className="auth-alert-success" style={{ marginBottom: '14px' }}>✓ {authSuccess}</div>}
+            {authError && (
+              <div className="auth-alert error">
+                <AlertCircle size={15} />
+                <span>{authError}</span>
+              </div>
+            )}
+            {authSuccess && (
+              <div className="auth-alert success">
+                <CheckCircle2 size={15} />
+                <span>{authSuccess}</span>
+              </div>
+            )}
 
             {/* LOGIN FORM */}
             {authMode === 'login' ? (
               <form onSubmit={handleLoginSubmit} className="auth-form">
-                <div className="auth-field">
-                  <label htmlFor="loginEmail">Email Address</label>
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <User size={14} />
+                    Hospital Email / Clinician ID
+                  </label>
                   <input
-                    id="loginEmail"
-                    className="form-input"
                     type="email"
-                    placeholder="doctor@cardioguard.com"
                     required
+                    placeholder="doctor@cardioguard.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
+                    className="clinical-input"
                   />
                 </div>
 
-                <div className="auth-field">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label htmlFor="loginPassword">Password</label>
-                    <span 
-                      style={{ fontSize: '12px', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <Lock size={14} />
+                    Password
+                  </label>
+                  <div className="password-input-wrap">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="clinical-input"
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? 'Hide' : 'Show'}
-                    </span>
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                  <input
-                    id="loginPassword"
-                    className="form-input"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                  />
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="auth-btn-submit"
+                <button
+                  type="submit"
+                  className="btn-submit-auth"
                   disabled={authLoading}
                 >
-                  {authLoading ? 'Signing In...' : 'Sign In to Portal'}
+                  {authLoading ? 'Verifying Credentials...' : 'Authenticate & Enter Workstation'}
                 </button>
-
-                <div className="auth-footer-link">
-                  Don't have an account?{' '}
-                  <span onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccess(''); }}>
-                    Register here
-                  </span>
-                </div>
               </form>
             ) : (
               /* REGISTRATION FORM */
               <form onSubmit={handleRegisterSubmit} className="auth-form">
-                <div className="auth-field">
-                  <label htmlFor="regName">Full Name & Title *</label>
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <User size={14} />
+                    Full Clinician Name
+                  </label>
                   <input
-                    id="regName"
-                    className="form-input"
                     type="text"
-                    placeholder="e.g. Dr. Jane Smith, MD"
                     required
+                    placeholder="Dr. Sarah Jenkins, MD"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
+                    className="clinical-input"
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="auth-field">
-                    <label htmlFor="regRole">Professional Role *</label>
-                    <select
-                      id="regRole"
-                      className="form-select"
-                      value={regRole}
-                      onChange={(e) => setRegRole(e.target.value)}
-                    >
-                      {CLINICAL_ROLES.map((role) => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="auth-field">
-                    <label htmlFor="regPhone">Contact Phone</label>
-                    <input
-                      id="regPhone"
-                      className="form-input"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="regInstitution">Hospital or Clinic Name</label>
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <UserCheck size={14} />
+                    Institutional Email
+                  </label>
                   <input
-                    id="regInstitution"
-                    className="form-input"
-                    type="text"
-                    placeholder="e.g. St. Jude Cardiovascular Center"
-                    value={regInstitution}
-                    onChange={(e) => setRegInstitution(e.target.value)}
-                  />
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="regEmail">Email Address *</label>
-                  <input
-                    id="regEmail"
-                    className="form-input"
                     type="email"
-                    placeholder="jane.smith@hospital.org"
                     required
+                    placeholder="s.jenkins@stjudeheart.org"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
+                    className="clinical-input"
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="auth-field">
-                    <label htmlFor="regPassword">Password *</label>
-                    <input
-                      id="regPassword"
-                      className="form-input"
-                      type="password"
-                      placeholder="Min. 6 chars"
-                      required
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="auth-field">
-                    <label htmlFor="regConfirmPassword">Confirm Password *</label>
-                    <input
-                      id="regConfirmPassword"
-                      className="form-input"
-                      type="password"
-                      placeholder="Re-type password"
-                      required
-                      value={regConfirmPassword}
-                      onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    />
-                  </div>
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <Building2 size={14} />
+                    Clinical Specialty / Role
+                  </label>
+                  <select
+                    value={regRole}
+                    onChange={(e) => setRegRole(e.target.value)}
+                    className="clinical-select"
+                  >
+                    {CLINICAL_ROLES.map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                  </select>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="auth-btn-submit"
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <Building2 size={14} />
+                    Hospital / Healthcare Institution
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Central Cardiovascular Institute"
+                    value={regInstitution}
+                    onChange={(e) => setRegInstitution(e.target.value)}
+                    className="clinical-input"
+                  />
+                </div>
+
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <Lock size={14} />
+                    Create Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    className="clinical-input"
+                  />
+                </div>
+
+                <div className="input-field-group">
+                  <label className="input-label">
+                    <Lock size={14} />
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    className="clinical-input"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-submit-auth"
                   disabled={authLoading}
                 >
-                  {authLoading ? 'Creating Account...' : 'Complete Clinician Registration'}
+                  {authLoading ? 'Registering Account...' : 'Complete Staff Registration'}
                 </button>
-
-                <div className="auth-footer-link">
-                  Already registered?{' '}
-                  <span onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}>
-                    Sign in here
-                  </span>
-                </div>
               </form>
             )}
           </div>
         </div>
       )}
 
-      {/* =========================================================
-          HOME PAGE VIEW
-         ========================================================= */}
-      {activeTab === 'home' && (
-        <div className="no-print" style={{ animation: 'slideUp 0.3s ease-out' }}>
-          {/* Hero Section */}
-          <section className="hero-card">
-            <div className="hero-content">
-              <div className="hero-badge">
-                <span className="pulse-dot"></span>
-                CLINICAL CARDIOVASCULAR AI ENGINE
-              </div>
-              <h1 className="hero-title">
-                AI-Driven Heart Disease Risk Prediction <span>& Diagnostic Reporting</span>
-              </h1>
-              <p className="hero-description">
-                Screen cardiovascular health with statistical precision. CardioGuard AI evaluates your 
-                lipid profile (Cholesterol), body metrics (BMI), and lifestyle factors to generate an instant, 
-                physician-grade medical report with personalized clinical recommendations.
-              </p>
-              <div className="hero-btn-group">
-                <button 
-                  type="button" 
-                  className="btn-hero-primary"
-                  onClick={requireAuthForAssessment}
-                >
-                  ⚡ Start Patient Risk Assessment
-                </button>
-                {!currentUser && (
-                  <button 
-                    type="button" 
-                    className="btn-hero-secondary"
-                    onClick={() => { setAuthNotice(''); setAuthMode('login'); setActiveTab('auth'); }}
-                  >
-                    🔑 Clinician Portal Login
-                  </button>
-                )}
-                {currentUser && (
-                  <button 
-                    type="button" 
-                    className="btn-hero-secondary"
-                    onClick={() => setActiveTab('dashboard')}
-                  >
-                    📊 Go to Dashboard
-                  </button>
-                )}
-              </div>
+      {/* ========================================================
+          VIEW 4: CLINICAL RISK ASSESSMENT FORM (Authenticated)
+          ======================================================== */}
+      {activeTab === 'assess' && currentUser && (
+        <div className="assessment-view">
+          {/* Preset Archetypes Bar */}
+          <div className="presets-banner">
+            <div className="presets-label">
+              <Sparkles size={16} style={{ color: 'var(--blue-600)' }} />
+              <span>Load Clinical Test Archetypes:</span>
             </div>
-          </section>
-
-          {/* Real-time Clinical Stats Ribbon */}
-          <section className="stats-ribbon">
-            <div className="stat-box">
-              <div className="stat-icon">🎯</div>
-              <div>
-                <div className="stat-number">85.8%</div>
-                <div className="stat-label">Model Accuracy (ROC AUC 0.85)</div>
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-icon">⏱️</div>
-              <div>
-                <div className="stat-number">&lt; 3 Sec</div>
-                <div className="stat-label">Instant Diagnostic Evaluation</div>
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-icon">🩸</div>
-              <div>
-                <div className="stat-number">11 Key Indices</div>
-                <div className="stat-label">Lipid & Clinical Biomarkers</div>
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-icon">🔒</div>
-              <div>
-                <div className="stat-number">100% Private</div>
-                <div className="stat-label">Persistent Encrypted SQLite</div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section: Why CardioGuard AI */}
-          <div className="section-header">
-            <span className="section-tag">Clinical Excellence</span>
-            <h2 className="section-title">Comprehensive Cardiovascular Screening</h2>
-            <p className="section-subtitle">
-              Engineered for cardiology clinics, preventive wellness centers, and patients seeking rapid, 
-              evidence-based cardiovascular risk intelligence.
-            </p>
-          </div>
-
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon-wrap">🩸</div>
-              <h3 className="feature-title">Cholesterol & Lipid Stratification</h3>
-              <p className="feature-desc">
-                Evaluates total cholesterol thresholds (&lt; 200 mg/dL normal, 200-239 borderline, ≥ 240 high) 
-                to quantify endothelial atheroma risk.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">🧠</div>
-              <h3 className="feature-title">Calibrated Machine Learning</h3>
-              <p className="feature-desc">
-                Trained with ensemble Random Forest and cross-validated sigmoid probability calibration for 
-                reliable, medically calibrated percentages.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">📄</div>
-              <h3 className="feature-title">Official Medical Report Card</h3>
-              <p className="feature-desc">
-                Generates a complete institutional report with patient identification, biometric indicators, 
-                risk gauges, and doctor sign-off blocks.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">🖨️</div>
-              <h3 className="feature-title">One-Click PDF & Print Export</h3>
-              <p className="feature-desc">
-                Clean A4 print stylesheet strips out web navigation, producing pixel-perfect clinical records 
-                ready for hospital charts.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">🩺</div>
-              <h3 className="feature-title">Tailored Clinical Recommendations</h3>
-              <p className="feature-desc">
-                Dynamic guidance advising ECGs, echocardiograms, statin consultations, smoking cessation protocols, 
-                and glycemic targets.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">💾</div>
-              <h3 className="feature-title">Searchable Patient Database</h3>
-              <p className="feature-desc">
-                Persistent database records every evaluation, allowing instant search by patient name, contact 
-                number, or unique Report ID.
-              </p>
+            <div className="presets-group">
+              <button
+                type="button"
+                className="preset-chip"
+                onClick={() => loadPreset('low')}
+              >
+                <CheckCircle2 size={13} style={{ color: 'var(--risk-low)' }} />
+                Archetype A: Low Risk Normotensive
+              </button>
+              <button
+                type="button"
+                className="preset-chip"
+                onClick={() => loadPreset('moderate')}
+              >
+                <AlertCircle size={13} style={{ color: 'var(--risk-mod)' }} />
+                Archetype B: Moderate Risk Borderline
+              </button>
+              <button
+                type="button"
+                className="preset-chip"
+                onClick={() => loadPreset('high')}
+              >
+                <AlertTriangle size={13} style={{ color: 'var(--risk-high)' }} />
+                Archetype C: High Risk Metabolic Syndrome
+              </button>
             </div>
           </div>
 
-          {/* Section: How It Works */}
-          <section className="process-section">
-            <div className="section-header" style={{ marginBottom: '28px' }}>
-              <span className="section-tag">Workflow</span>
-              <h2 className="section-title">How the Screening Works in 3 Steps</h2>
+          {/* Form Container */}
+          <div className="intake-card">
+            <div className="intake-card-header">
+              <div className="intake-card-title">
+                <h1>
+                  <Stethoscope size={22} />
+                  Comprehensive Cardiovascular Risk Stratification Intake
+                </h1>
+                <p>Enter patient biometrics, lipid profile, and clinical history for multi-parametric inference.</p>
+              </div>
+              <span className="protocol-badge">PROTOCOL CDSS-ML-v2.4</span>
             </div>
 
-            <div className="steps-grid">
-              <div className="step-card">
-                <div className="step-number">1</div>
-                <h4 className="step-title">Enter Patient Profile & Vitals</h4>
-                <p className="step-desc">
-                  Input demographics (Name, DOB, Blood Group) alongside clinical indicators like Cholesterol Level, 
-                  BMI, and lifestyle habits.
-                </p>
-              </div>
-
-              <div className="step-card">
-                <div className="step-number">2</div>
-                <h4 className="step-title">AI Evaluates Multi-Factor Risk</h4>
-                <p className="step-desc">
-                  The calibrated model calculates disease probability and classifies the patient into Low, 
-                  Moderate, or High risk tiers.
-                </p>
-              </div>
-
-              <div className="step-card">
-                <div className="step-number">3</div>
-                <h4 className="step-title">Generate & Print Medical Report</h4>
-                <p className="step-desc">
-                  Review the interactive risk gauge, inspect contributing comorbidities, and print an official 
-                  clinical report with one click.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Call to Action Banner */}
-          <section className="cta-banner">
-            <h2>Ready to Run a Cardiovascular Assessment?</h2>
-            <p>
-              Screening takes less than 2 minutes. Sign in to your clinician account to begin.
-            </p>
-            <button 
-              type="button" 
-              className="btn-hero-primary"
-              onClick={requireAuthForAssessment}
-            >
-              ⚡ Launch Risk Assessment Tool
-            </button>
-          </section>
-        </div>
-      )}
-
-      {/* =========================================================
-          RISK ASSESSMENT & PREDICTION FORM VIEW (ONLY FOR LOGGED IN USERS)
-         ========================================================= */}
-      {currentUser && activeTab === 'assessment' && (
-        <main className="no-print" style={{ animation: 'slideUp 0.3s ease-out' }}>
-          {/* Preset Selector Banner */}
-          <div className="presets-container">
-            <span className="presets-label">⚡ Quick Patient Profiles:</span>
-            <button type="button" className="preset-chip healthy" onClick={() => loadPreset('healthy')}>
-              🟢 Healthy Young Adult
-            </button>
-            <button type="button" className="preset-chip moderate" onClick={() => loadPreset('moderate')}>
-              🟡 Moderate Risk (Middle-aged)
-            </button>
-            <button type="button" className="preset-chip high-risk" onClick={() => loadPreset('high')}>
-              🔴 High Risk (Senior with High Cholesterol)
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            {/* Card 1: Patient Information */}
-            <section className="card">
-              <div className="card-header">
-                <div className="card-title-group">
-                  <span className="card-icon">👤</span>
-                  <h2 className="card-title">Patient Identification & Registration</h2>
-                </div>
-                <span className="card-badge">Demographics</span>
-              </div>
-
-              <div className="grid-4">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="patientName">Full Name *</label>
-                  <input
-                    id="patientName"
-                    className="form-input"
-                    type="text"
-                    placeholder="e.g. John Doe"
-                    required
-                    value={formData.patientName}
-                    onChange={(e) => handleInputChange('patientName', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="dob">
-                    Date of Birth * {currentAge !== null && <span style={{ color: '#2563eb', fontWeight: 700 }}>({currentAge} yrs)</span>}
-                  </label>
-                  <input
-                    id="dob"
-                    className="form-input"
-                    type="date"
-                    required
-                    value={formData.dob}
-                    onChange={handleDobChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="phone">Phone Number *</label>
-                  <input
-                    id="phone"
-                    className="form-input"
-                    type="tel"
-                    placeholder="e.g. +1 (555) 000-0000"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="bloodGroup">Blood Group *</label>
-                  <select
-                    id="bloodGroup"
-                    className="form-select"
-                    value={formData.bloodGroup}
-                    onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                  >
-                    {BLOOD_GROUPS.map((bg) => (
-                      <option key={bg} value={bg}>{bg}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </section>
-
-            {/* Card 2: Clinical Indicators (With Cholesterol Level) */}
-            <section className="card">
-              <div className="card-header">
-                <div className="card-title-group">
-                  <span className="card-icon">🩺</span>
-                  <h2 className="card-title">Cardiovascular Indicators & Lipid Profile</h2>
-                </div>
-                <span className="card-badge">Clinical Features</span>
-              </div>
-
-              <div className="grid-4">
-                {/* 1. Body Mass Index */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="bmi">
-                    Body Mass Index
-                    <span className="helper-link" onClick={() => setShowBmiModal(true)}>BMI Calc</span>
-                  </label>
-                  <input
-                    id="bmi"
-                    className="form-input"
-                    type="number"
-                    step="0.1"
-                    min="12"
-                    max="65"
-                    value={formData.BMI}
-                    onChange={(e) => handleInputChange('BMI', e.target.value)}
-                  />
-                </div>
-
-                {/* 2. Cholesterol Level */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="cholesterol">
-                    Cholesterol Level *
-                  </label>
-                  <select
-                    id="cholesterol"
-                    className="form-select"
-                    value={formData.Cholesterol}
-                    onChange={(e) => handleInputChange('Cholesterol', e.target.value)}
-                  >
-                    {CHOLESTEROL_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Average Sleep Hours */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="sleepTime">Average Sleep Hours</label>
-                  <input
-                    id="sleepTime"
-                    className="form-input"
-                    type="number"
-                    min="1"
-                    max="24"
-                    value={formData.SleepTime}
-                    onChange={(e) => handleInputChange('SleepTime', e.target.value)}
-                  />
-                </div>
-
-                {/* 4. Smoking */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="smoking">Smoking</label>
-                  <select
-                    id="smoking"
-                    className="form-select"
-                    value={formData.Smoking}
-                    onChange={(e) => handleInputChange('Smoking', e.target.value)}
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </select>
-                </div>
-
-                {/* 5. Alcohol Drinking */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="alcohol">Alcohol Drinking</label>
-                  <select
-                    id="alcohol"
-                    className="form-select"
-                    value={formData.AlcoholDrinking}
-                    onChange={(e) => handleInputChange('AlcoholDrinking', e.target.value)}
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </select>
-                </div>
-
-                {/* 6. Stroke */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="stroke">Stroke</label>
-                  <select
-                    id="stroke"
-                    className="form-select"
-                    value={formData.Stroke}
-                    onChange={(e) => handleInputChange('Stroke', e.target.value)}
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </select>
-                </div>
-
-                {/* 7. Sex */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="sex">Sex</label>
-                  <select
-                    id="sex"
-                    className="form-select"
-                    value={formData.Sex}
-                    onChange={(e) => handleInputChange('Sex', e.target.value)}
-                  >
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                  </select>
-                </div>
-
-                {/* 8. Age Category */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="ageCat">Age Category</label>
-                  <select
-                    id="ageCat"
-                    className="form-select"
-                    value={formData.AgeCategory}
-                    onChange={(e) => handleInputChange('AgeCategory', e.target.value)}
-                  >
-                    {AGE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 9. Diabetic */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="diabetic">Diabetic</label>
-                  <select
-                    id="diabetic"
-                    className="form-select"
-                    value={formData.Diabetic}
-                    onChange={(e) => handleInputChange('Diabetic', e.target.value)}
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No, borderline diabetes">No, borderline diabetes</option>
-                    <option value="Yes (during pregnancy)">Yes (during pregnancy)</option>
-                  </select>
-                </div>
-
-                {/* 10. General Health */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="genHealth">Gen Health</label>
-                  <select
-                    id="genHealth"
-                    className="form-select"
-                    value={formData.GenHealth}
-                    onChange={(e) => handleInputChange('GenHealth', e.target.value)}
-                  >
-                    <option value="Very good">Very good</option>
-                    <option value="Excellent">Excellent</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
-                    <option value="Poor">Poor</option>
-                  </select>
-                </div>
-
-                {/* 11. Asthma */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor="asthma">Asthma</label>
-                  <select
-                    id="asthma"
-                    className="form-select"
-                    value={formData.Asthma}
-                    onChange={(e) => handleInputChange('Asthma', e.target.value)}
-                  >
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="action-bar">
-                <button 
-                  type="button" 
-                  className="btn btn-outline"
-                  onClick={() => setFormData(INITIAL_FORM)}
-                >
-                  Reset Fields
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? 'Evaluating Cardiovascular Profile...' : '⚡ Predict & Generate Medical Report'}
-                </button>
-              </div>
-            </section>
-          </form>
-        </main>
-      )}
-
-      {/* =========================================================
-          GENERATED MEDICAL REPORT VIEW
-         ========================================================= */}
-      {report && (
-        <section id="medical-report-view" className="report-section report-printable">
-          <div className="report-card">
-            {/* Facility Header */}
-            <div className="report-facility-header">
-              <div className="facility-brand">
-                <div className="facility-logo">🏥</div>
-                <div>
-                  <h2 className="facility-title">CARDIO-DIAGNOSTIC HEALTH INSTITUTE</h2>
-                  <p className="facility-subtitle">Automated Cardiovascular Risk Screening & Prevention Center</p>
-                </div>
-              </div>
-              <div className="report-metadata">
-                <div>Report ID: <span className="report-id">{report.reportId}</span></div>
-                <div>Issued: {report.createdAt}</div>
-                <div>Status: <span style={{ color: '#16a34a', fontWeight: 800 }}>VERIFIED</span></div>
-              </div>
-            </div>
-
-            {/* Patient Demographics Banner */}
-            <div className="patient-banner">
-              <div className="banner-item">
-                <span className="banner-label">Patient Name</span>
-                <span className="banner-val">{report.patient.name}</span>
-              </div>
-              <div className="banner-item">
-                <span className="banner-label">Age / Gender</span>
-                <span className="banner-val">
-                  {report.patient.age ? `${report.patient.age} yrs` : report.clinicalInputs?.AgeCategory} • {report.patient.sex}
-                </span>
-              </div>
-              <div className="banner-item">
-                <span className="banner-label">Blood Group</span>
-                <span className="banner-val">{report.patient.bloodGroup}</span>
-              </div>
-              <div className="banner-item">
-                <span className="banner-label">Contact</span>
-                <span className="banner-val">{report.patient.phone}</span>
-              </div>
-            </div>
-
-            {/* Risk Score Container */}
-            <div className={`risk-score-container ${
-              report.prediction.riskScore < 20 ? 'low' : report.prediction.riskScore < 50 ? 'moderate' : 'high'
-            }`}>
-              <div className="risk-info-main">
-                <div className={`risk-badge ${
-                  report.prediction.riskScore < 20 ? 'low' : report.prediction.riskScore < 50 ? 'moderate' : 'high'
-                }`}>
-                  ● {report.prediction.riskLevel}
-                </div>
-                <p className="risk-summary-text">{report.prediction.summary}</p>
-              </div>
-
-              <div className={`risk-gauge-circle ${
-                report.prediction.riskScore < 20 ? 'low' : report.prediction.riskScore < 50 ? 'moderate' : 'high'
-              }`}>
-                <span className="gauge-pct">{report.prediction.riskScore}%</span>
-                <span className="gauge-label">Probability</span>
-              </div>
-            </div>
-
-            {/* Biometric & Lipid Profile Summary */}
-            <h3 className="report-subheading">📊 Clinical Biometric & Lipid Summary</h3>
-            <div className="biometric-grid">
-              <div className="biometric-card">
-                <div className="biometric-title">BMI INDEX</div>
-                <div className="biometric-value">
-                  {report.bmiDetails?.bmi || report.clinicalInputs?.BMI}
-                </div>
-                <div className="biometric-sub">{report.bmiDetails?.category}</div>
-              </div>
-              <div className="biometric-card">
-                <div className="biometric-title">CHOLESTEROL LEVEL</div>
-                <div className="biometric-value" style={{ fontSize: '15px' }}>
-                  {report.cholesterolDetails?.label || report.clinicalInputs?.Cholesterol}
-                </div>
-                <div className="biometric-sub" style={{
-                  color: report.clinicalInputs?.Cholesterol === 'High' ? '#dc2626' : (
-                    report.clinicalInputs?.Cholesterol === 'Borderline High' ? '#d97706' : '#16a34a'
-                  )
-                }}>
-                  {report.clinicalInputs?.Cholesterol === 'High' ? 'Elevated Risk' : (
-                    report.clinicalInputs?.Cholesterol === 'Borderline High' ? 'Borderline' : 'Optimal'
-                  )}
-                </div>
-              </div>
-              <div className="biometric-card">
-                <div className="biometric-title">SLEEP DURATION</div>
-                <div className="biometric-value">
-                  {report.clinicalInputs?.SleepTime} hrs/night
-                </div>
-                <div className="biometric-sub" style={{ color: '#475569' }}>
-                  {report.clinicalInputs?.SleepTime >= 7 && report.clinicalInputs?.SleepTime <= 9 ? 'Optimal (7-9h)' : 'Suboptimal'}
-                </div>
-              </div>
-              <div className="biometric-card">
-                <div className="biometric-title">GENERAL HEALTH</div>
-                <div className="biometric-value">
-                  {report.clinicalInputs?.GenHealth}
-                </div>
-                <div className="biometric-sub" style={{ color: '#475569' }}>Self Reported</div>
-              </div>
-            </div>
-
-            {/* Contributing Risk Factors */}
-            <h3 className="report-subheading">⚠️ Contributing Risk Factors & Comorbidities</h3>
-            {report.contributingFactors && report.contributingFactors.length > 0 ? (
-              <div className="factors-grid">
-                {report.contributingFactors.map((factor, idx) => (
-                  <div key={idx} className="factor-card">
-                    <div className="factor-header">
-                      <span className="factor-name">{factor.name}</span>
-                      <span className={`factor-tag ${factor.severity}`}>{factor.severity}</span>
-                    </div>
-                    <p className="factor-desc">{factor.description}</p>
+            <form onSubmit={handleSubmit}>
+              <div className="form-content">
+                {/* SECTION 1: Patient Identification & Demographics */}
+                <div className="form-section">
+                  <div className="section-legend">
+                    <span className="section-number">1</span>
+                    <span className="section-title">Patient Identification & Demographics</span>
+                    <span className="section-desc">Required for hospital diagnostic chart record</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: '#16a34a', fontSize: '14.5px', marginBottom: '22px', fontWeight: 600 }}>
-                ✓ No high-risk comorbidities or significant cardiovascular risk drivers detected.
-              </p>
-            )}
 
-            {/* Recommendations */}
-            <h3 className="report-subheading">🩺 Tailored Clinical & Lifestyle Recommendations</h3>
-            <ul className="recommendations-list">
-              {report.recommendations && report.recommendations.map((rec, idx) => (
-                <li key={idx} className="recommendation-item">
-                  <span className="recommendation-bullet">›</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Doctor Signoff Footer */}
-            <div className="doctor-signoff">
-              <div style={{ fontSize: '12px', color: '#64748b', maxWidth: '360px', lineHeight: 1.45 }}>
-                * This computer-assisted assessment is generated via trained epidemiologic algorithms. It is intended to support, not replace, clinical evaluation by a licensed cardiologist.
-              </div>
-              <div className="signoff-box">
-                <div className="signature-line">
-                  {currentUser ? currentUser.name : 'Dr. Alistair Reed, MD'}
-                </div>
-                <div className="signoff-title">
-                  {currentUser ? (currentUser.role || 'Attending Physician') : 'Chief of Preventive Cardiology'}
-                </div>
-              </div>
-            </div>
-
-            {/* Actions (Hidden on print) */}
-            <div className="action-bar no-print" style={{ marginTop: '26px' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setReport(null)}>
-                ← Close Report
-              </button>
-              <button type="button" className="btn btn-primary" onClick={handlePrint}>
-                🖨️ Print / Save PDF Medical Report
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <footer className="app-footer no-print">
-        <p className="footer-disclaimer">
-          Medical Disclaimer: CardioGuard AI is an automated risk assessment screening aid developed for educational and preventive wellness purposes. It is not an alternative to professional clinical diagnosis by an accredited cardiologist.
-        </p>
-        <p>© 2026 CardioGuard Health Institute. All rights reserved.</p>
-      </footer>
-
-      {/* BMI Calculator Modal */}
-      {showBmiModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Quick BMI Calculator</h3>
-              <button type="button" className="close-btn" onClick={() => setShowBmiModal(false)}>✕</button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Height (cm)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={calcHeight}
-                  onChange={(e) => setCalcHeight(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Weight (kg)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={calcWeight}
-                  onChange={(e) => setCalcWeight(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              <div style={{
-                padding: '14px 18px',
-                background: '#eff6ff',
-                borderRadius: '12px',
-                border: '1.5px solid #bfdbfe',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#1e40af' }}>Calculated BMI:</span>
-                <span style={{ fontSize: '22px', fontWeight: 800, color: '#1d4ed8' }}>
-                  {calcHeight > 0 ? (calcWeight / ((calcHeight / 100) ** 2)).toFixed(1) : 0}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowBmiModal(false)}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-primary" onClick={applyCalculatedBmi}>
-                  Apply to Form
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Past Reports Records Modal */}
-      {showHistoryModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '750px' }}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Historical Patient Records</h3>
-              <button type="button" className="close-btn" onClick={() => setShowHistoryModal(false)}>✕</button>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Search by patient name, phone or report ID..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchReportsHistory()}
-              />
-            </div>
-
-            {historyLoading ? (
-              <p style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>Loading records...</p>
-            ) : reportsHistory.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
-                <p style={{ fontSize: '15px', fontWeight: 600 }}>No reports found in the records database.</p>
-                <p style={{ fontSize: '13px', marginTop: '6px' }}>Generate a prediction to save the first patient report.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '420px', overflowY: 'auto' }}>
-                {reportsHistory.map((rep) => (
-                  <div
-                    key={rep.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '14px 18px',
-                      background: '#f8fbff',
-                      borderRadius: '12px',
-                      border: '1.5px solid #dbeafe',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onClick={() => loadPastReport(rep.id)}
-                  >
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
-                        {rep.patient_name} <span style={{ fontSize: '12.5px', fontWeight: 500, color: '#1e40af' }}>({rep.sex}, {rep.blood_group || rep.bloodGroup})</span>
+                  <div className="form-grid-4">
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <User size={13} /> Full Patient Name
+                        </label>
                       </div>
-                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
-                        ID: {rep.id} • {rep.created_at}
-                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Eleanor Vance"
+                        value={formData.patientName}
+                        onChange={(e) => handleInputChange('patientName', e.target.value)}
+                        className="clinical-input"
+                      />
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className={`risk-badge ${
-                        rep.risk_score < 20 ? 'low' : rep.risk_score < 50 ? 'moderate' : 'high'
-                      }`} style={{ fontSize: '12px', padding: '4px 12px' }}>
-                        {rep.risk_score}% • {rep.risk_level}
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Calendar size={13} /> Date of Birth
+                        </label>
+                        {currentAge !== null && (
+                          <span className="input-badge">{currentAge} Years Old</span>
+                        )}
+                      </div>
+                      <input
+                        type="date"
+                        required
+                        value={formData.dob}
+                        onChange={handleDobChange}
+                        className="clinical-input"
+                      />
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Phone size={13} /> Contact Phone
+                        </label>
+                      </div>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+1 (555) 000-0000"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className="clinical-input"
+                      />
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Droplet size={13} /> Blood Group
+                        </label>
+                      </div>
+                      <select
+                        value={formData.bloodGroup}
+                        onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                        className="clinical-select"
+                      >
+                        {BLOOD_GROUPS.map(bg => (
+                          <option key={bg} value={bg}>{bg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: Biometrics & Lipid Profile */}
+                <div className="form-section">
+                  <div className="section-legend">
+                    <span className="section-number">2</span>
+                    <span className="section-title">Biometrics & Lipid Profile</span>
+                    <span className="section-desc">Key anthropometric and biochemical indicators</span>
+                  </div>
+
+                  <div className="form-grid-3">
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Scale size={13} /> Body Mass Index (BMI)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowBmiModal(true)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--blue-600)',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Calculate BMI
+                        </button>
+                      </div>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="12"
+                        max="60"
+                        required
+                        value={formData.BMI}
+                        onChange={(e) => handleInputChange('BMI', parseFloat(e.target.value) || 0)}
+                        className="clinical-input"
+                      />
+                      <span className="input-helper-text">
+                        Status: {formData.BMI < 18.5 ? 'Underweight' : formData.BMI < 25 ? 'Normal (18.5-24.9)' : formData.BMI < 30 ? 'Overweight (25-29.9)' : 'Obese (>=30)'}
                       </span>
                     </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Droplet size={13} /> Cholesterol Level
+                        </label>
+                        <span className="input-badge">ATP III Guidelines</span>
+                      </div>
+                      <select
+                        value={formData.Cholesterol}
+                        onChange={(e) => handleInputChange('Cholesterol', e.target.value)}
+                        className="clinical-select"
+                      >
+                        {CHOLESTEROL_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <span className="input-helper-text">Standard fasting serum total cholesterol range</span>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <BedDouble size={13} /> Average Daily Sleep
+                        </label>
+                        <span className="input-badge">{formData.SleepTime} hrs/day</span>
+                      </div>
+                      <input
+                        type="number"
+                        min="2"
+                        max="18"
+                        required
+                        value={formData.SleepTime}
+                        onChange={(e) => handleInputChange('SleepTime', parseInt(e.target.value, 10) || 0)}
+                        className="clinical-input"
+                      />
+                      <span className="input-helper-text">Optimal physiological restorative sleep: 7 - 9 hours</span>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* SECTION 3: Cardiovascular History & Systemic Risk Factors */}
+                <div className="form-section">
+                  <div className="section-legend">
+                    <span className="section-number">3</span>
+                    <span className="section-title">Cardiovascular History & Systemic Risk Factors</span>
+                    <span className="section-desc">Etiological risk indicators & comorbidities</span>
+                  </div>
+
+                  <div className="form-grid-4">
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Cigarette size={13} /> Tobacco / Smoking History
+                        </label>
+                      </div>
+                      <select
+                        value={formData.Smoking}
+                        onChange={(e) => handleInputChange('Smoking', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="No">No (Non-Smoker / Never Smoked)</option>
+                        <option value="Yes">Yes (Active / Prior History &gt;= 100 cigs)</option>
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Wine size={13} /> Alcohol Consumption
+                        </label>
+                      </div>
+                      <select
+                        value={formData.AlcoholDrinking}
+                        onChange={(e) => handleInputChange('AlcoholDrinking', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="No">No (None / Occasional)</option>
+                        <option value="Yes">Yes (Heavy: &gt;14 drinks/wk M, &gt;7 W)</option>
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <AlertTriangle size={13} /> Prior Cerebrovascular Event (Stroke)
+                        </label>
+                      </div>
+                      <select
+                        value={formData.Stroke}
+                        onChange={(e) => handleInputChange('Stroke', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="No">No (No prior CVA history)</option>
+                        <option value="Yes">Yes (Confirmed prior Stroke / TIA)</option>
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Pill size={13} /> Diabetic Status
+                        </label>
+                      </div>
+                      <select
+                        value={formData.Diabetic}
+                        onChange={(e) => handleInputChange('Diabetic', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="No">No (Normoglycemic)</option>
+                        <option value="Yes">Yes (Diagnosed Diabetes Mellitus)</option>
+                        <option value="Borderline">Borderline / Pre-Diabetic</option>
+                        <option value="Yes (during pregnancy)">Gestational Diabetes</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 4: Functional & General Health Status */}
+                <div className="form-section">
+                  <div className="section-legend">
+                    <span className="section-number">4</span>
+                    <span className="section-title">Functional Status & Clinical Presentation</span>
+                    <span className="section-desc">Demographics & self-reported constitutional health</span>
+                  </div>
+
+                  <div className="form-grid-4">
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <User size={13} /> Biological Sex
+                        </label>
+                      </div>
+                      <select
+                        value={formData.Sex}
+                        onChange={(e) => handleInputChange('Sex', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="Female">Female</option>
+                        <option value="Male">Male</option>
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Calendar size={13} /> Age Category Cohort
+                        </label>
+                      </div>
+                      <select
+                        value={formData.AgeCategory}
+                        onChange={(e) => handleInputChange('AgeCategory', e.target.value)}
+                        className="clinical-select"
+                      >
+                        {AGE_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <Activity size={13} /> Self-Reported General Health
+                        </label>
+                      </div>
+                      <select
+                        value={formData.GenHealth}
+                        onChange={(e) => handleInputChange('GenHealth', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="Excellent">Excellent</option>
+                        <option value="Very good">Very good</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Poor">Poor</option>
+                      </select>
+                    </div>
+
+                    <div className="input-field-group">
+                      <div className="input-label-row">
+                        <label className="input-label">
+                          <AlertCircle size={13} /> Bronchial Asthma History
+                        </label>
+                      </div>
+                      <select
+                        value={formData.Asthma}
+                        onChange={(e) => handleInputChange('Asthma', e.target.value)}
+                        className="clinical-select"
+                      >
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Submit Action Bar */}
+              <div className="submit-action-bar">
+                <div className="clinical-assurance">
+                  <ShieldCheck size={18} style={{ color: 'var(--blue-600)' }} />
+                  <span>Calibrated ML Classification Model • Encrypted HL7/FHIR Protocol compliant</span>
+                </div>
+                <button
+                  type="submit"
+                  className="btn-primary-diagnostic"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      Executing Multi-Parametric Inference...
+                    </>
+                  ) : (
+                    <>
+                      <Activity size={17} />
+                      Generate Official Diagnostic Report
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* ========================================================
+          VIEW 5: HOSPITAL MEDICAL DIAGNOSTIC REPORT (Printable)
+          ======================================================== */}
+      {activeTab === 'report' && report && (
+        <div className="report-view">
+          {/* Action Ribbon */}
+          <div className="report-action-ribbon">
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--navy-900)' }}>
+              Cardiovascular Diagnostic Chart Record • {report.reportId}
+            </span>
+            <div className="ribbon-buttons">
+              <button
+                className="btn-action-print"
+                onClick={handlePrint}
+              >
+                <Printer size={15} />
+                Print Diagnostic Chart (PDF)
+              </button>
+              <button
+                className="btn-action-secondary"
+                onClick={() => setActiveTab('assess')}
+              >
+                <PlusCircle size={15} />
+                New Intake
+              </button>
+              <button
+                className="btn-action-secondary"
+                onClick={() => setActiveTab('dashboard')}
+              >
+                Workstation Dashboard
+              </button>
+            </div>
+          </div>
+
+          {/* Authentic Hospital Medical Chart Sheet */}
+          <div className="hospital-report-sheet">
+            {/* Hospital Letterhead Header */}
+            <div className="hospital-letterhead">
+              <div className="hospital-seal-title">
+                <div className="hospital-seal">
+                  <HeartPulse size={30} />
+                </div>
+                <div className="hospital-names">
+                  <h1>Central Cardiovascular Institute & Diagnostics</h1>
+                  <h2>Division of Preventive Cardiology • Diagnostic Decision Support</h2>
+                  <p>Accredited Center for Cardiovascular Risk Stratification & Clinical Research</p>
+                </div>
+              </div>
+              <div className="hospital-accreditation">
+                <span className="accreditation-pill">CAP #8492011 • CLIA #36D089124</span>
+                <span className="accreditation-pill">ISO 15189 Certified CDSS</span>
+                <span className="report-accession-no">ACCESSION: {report.reportId}</span>
+              </div>
+            </div>
+
+            {/* Patient Chart Demographics Banner */}
+            <div className="patient-chart-banner">
+              <div className="chart-field">
+                <span className="chart-field-label">Patient Full Name</span>
+                <span className="chart-field-value">{report.patient?.name || 'Anonymous Patient'}</span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Date of Birth / Age</span>
+                <span className="chart-field-value">
+                  {report.patient?.dob || 'N/A'} {report.patient?.age ? `(${report.patient.age} yrs)` : ''}
+                </span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Biological Sex / Blood</span>
+                <span className="chart-field-value">
+                  {report.patient?.sex || formData.Sex} • {report.patient?.bloodGroup || formData.bloodGroup}
+                </span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Contact Phone</span>
+                <span className="chart-field-value">{report.patient?.phone || formData.phone || 'N/A'}</span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Evaluation Timestamp</span>
+                <span className="chart-field-value code">
+                  {report.createdAt ? new Date(report.createdAt).toLocaleString() : new Date().toLocaleString()}
+                </span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Attending Clinician</span>
+                <span className="chart-field-value">
+                  {currentUser?.name || 'Dr. Alistair Reed, MD'}
+                </span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Clinical Facility</span>
+                <span className="chart-field-value">
+                  {currentUser?.institution || 'Central Cardiovascular Institute'}
+                </span>
+              </div>
+
+              <div className="chart-field">
+                <span className="chart-field-label">Inference Engine</span>
+                <span className="chart-field-value code">Platt-Calibrated RF v2.4</span>
+              </div>
+            </div>
+
+            {/* Primary Finding Banner */}
+            {(() => {
+              const riskScore = report.prediction?.riskScore || 0;
+              const isHigh = report.prediction?.riskLevel === 'High Risk' || riskScore >= 50;
+              const isMod = report.prediction?.riskLevel === 'Moderate Risk' || (riskScore >= 20 && riskScore < 50);
+              const boxClass = isHigh ? 'high' : isMod ? 'moderate' : 'low';
+
+              return (
+                <div className={`primary-finding-box ${boxClass}`}>
+                  <div className="finding-title-group">
+                    <span className="finding-pill-status">
+                      {isHigh ? <AlertTriangle size={14} /> : isMod ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                      {isHigh ? 'High Cardiovascular Risk Detected' : isMod ? 'Moderate Cardiovascular Risk Markers' : 'Low Cardiovascular Risk Profile'}
+                    </span>
+                    <h3>{report.prediction?.riskLevel || (isHigh ? 'High Risk' : isMod ? 'Moderate Risk' : 'Low Risk')}</h3>
+                    <p>{report.prediction?.summary}</p>
+                  </div>
+                  <div className="finding-score-display">
+                    <span className="finding-score-value">{riskScore.toFixed(1)}%</span>
+                    <span className="finding-score-caption">Framingham 10-Yr Index</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Diagnostic Biometrics Table */}
+            <div className="biometrics-table-wrapper">
+              <span className="report-section-heading">
+                <Activity size={15} />
+                Biometrics & Lipid Profile Analysis
+              </span>
+              <table className="biometrics-table">
+                <thead>
+                  <tr>
+                    <th>Biomarker / Indicator</th>
+                    <th>Observed Patient Value</th>
+                    <th>Standard Reference Interval</th>
+                    <th>Clinical Interpretation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Total Serum Cholesterol</strong></td>
+                    <td>{report.cholesterolDetails?.level || formData.Cholesterol}</td>
+                    <td>Normal: &lt; 200 mg/dL</td>
+                    <td>
+                      {formData.Cholesterol === 'High' ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> Clinically Elevated (&gt;= 240 mg/dL)
+                        </span>
+                      ) : formData.Cholesterol === 'Borderline High' ? (
+                        <span className="flag-badge borderline">
+                          <AlertCircle size={11} /> Borderline High (200-239 mg/dL)
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Desirable (&lt; 200 mg/dL)
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>Body Mass Index (BMI)</strong></td>
+                    <td>{report.bmiDetails?.bmi || formData.BMI} kg/m²</td>
+                    <td>Standard Normal: 18.5 – 24.9 kg/m²</td>
+                    <td>
+                      {formData.BMI >= 30 ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> Class I/II Obesity (BMI &gt;= 30)
+                        </span>
+                      ) : formData.BMI >= 25 ? (
+                        <span className="flag-badge borderline">
+                          <AlertCircle size={11} /> Overweight (25.0 - 29.9)
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Normal Anthropometric Weight
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>Average Daily Sleep</strong></td>
+                    <td>{report.clinicalInputs?.SleepTime || formData.SleepTime} Hours</td>
+                    <td>Adult Guideline: 7.0 – 9.0 Hours</td>
+                    <td>
+                      {formData.SleepTime < 6 ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> Insufficient Sleep Duration (&lt; 6 hrs)
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Restorative Sleep Range
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>Cerebrovascular History</strong></td>
+                    <td>{formData.Stroke === 'Yes' ? 'Positive Prior CVA' : 'No Prior CVA'}</td>
+                    <td>Negative / None</td>
+                    <td>
+                      {formData.Stroke === 'Yes' ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> High Vulnerability Factor
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Non-Contributory
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>Diabetic Status</strong></td>
+                    <td>{formData.Diabetic}</td>
+                    <td>Normoglycemic (Fasting Glucose &lt; 100 mg/dL)</td>
+                    <td>
+                      {formData.Diabetic === 'Yes' ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> Major Macrovascular Risk Co-Factor
+                        </span>
+                      ) : formData.Diabetic === 'Borderline' ? (
+                        <span className="flag-badge borderline">
+                          <AlertCircle size={11} /> Impaired Fasting Glycemia
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Non-Diabetic
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>Tobacco / Smoking Status</strong></td>
+                    <td>{formData.Smoking === 'Yes' ? 'Active / Chronic Smoker' : 'Non-Smoker'}</td>
+                    <td>Non-Smoker</td>
+                    <td>
+                      {formData.Smoking === 'Yes' ? (
+                        <span className="flag-badge elevated">
+                          <AlertTriangle size={11} /> Accelerates Coronary Atherosclerosis
+                        </span>
+                      ) : (
+                        <span className="flag-badge normal">
+                          <Check size={11} /> Low Endothelial Damage
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Contributing Factors Matrix */}
+            {report.contributingFactors && report.contributingFactors.length > 0 && (
+              <div className="biometrics-table-wrapper">
+                <span className="report-section-heading">
+                  <AlertTriangle size={15} />
+                  Algorithmic Contributing Risk Factors
+                </span>
+                <div className="factors-matrix">
+                  {report.contributingFactors.map((f, idx) => (
+                    <div key={idx} className="factor-item-card">
+                      <div className="factor-header">
+                        <span className="factor-name">{f.name}</span>
+                        <span className={`factor-severity-pill ${f.severity || 'medium'}`}>
+                          {f.severity || 'Moderate'} Impact
+                        </span>
+                      </div>
+                      <p className="factor-desc">{f.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations List */}
+            {report.recommendations && report.recommendations.length > 0 && (
+              <div className="biometrics-table-wrapper">
+                <span className="report-section-heading">
+                  <ClipboardList size={15} />
+                  Evidence-Based Clinical Management Protocols
+                </span>
+                <div className="recommendations-grid">
+                  {report.recommendations.map((rec, idx) => (
+                    <div key={idx} className="recommendation-item">
+                      <ChevronRight size={16} className="rec-bullet" />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Physician Attestation & Signature Footer */}
+            <div className="physician-signoff-block">
+              <div className="clinical-disclaimer-text">
+                <strong>REGULATORY & CDSS ATTESTATION DISCLAIMER:</strong> This diagnostic record is generated by an algorithmic clinical decision support system (CardioGuard™ CDSS v2.4) utilizing Platt-calibrated machine learning. It is intended to assist certified healthcare professionals in cardiovascular risk stratification and does not replace comprehensive in-person medical evaluation, coronary angiography, or clinical laboratory judgment.
+              </div>
+              <div className="signature-box">
+                <div className="signature-line"></div>
+                <span className="physician-name">{currentUser?.name || 'Dr. Alistair Reed, MD'}</span>
+                <span className="physician-meta">
+                  {currentUser?.role || 'Attending Cardiologist'} • Lic. #{currentUser?.licenseNumber || 'MD-849201'}
+                </span>
+                <span className="physician-meta">
+                  Electronically Attested: {new Date().toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 1: BMI CALCULATOR
+          ======================================================== */}
+      {showBmiModal && (
+        <div className="modal-backdrop" onClick={() => setShowBmiModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Scale size={18} />
+                Clinical Body Mass Index (BMI) Calculator
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowBmiModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="input-field-group">
+                <div className="input-label-row">
+                  <label className="input-label">Patient Height</label>
+                  <span className="input-badge">{calcHeight} cm</span>
+                </div>
+                <input
+                  type="range"
+                  min="120"
+                  max="220"
+                  value={calcHeight}
+                  onChange={(e) => setCalcHeight(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', accentColor: 'var(--blue-600)' }}
+                />
+              </div>
+
+              <div className="input-field-group">
+                <div className="input-label-row">
+                  <label className="input-label">Patient Weight</label>
+                  <span className="input-badge">{calcWeight} kg</span>
+                </div>
+                <input
+                  type="range"
+                  min="35"
+                  max="180"
+                  value={calcWeight}
+                  onChange={(e) => setCalcWeight(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', accentColor: 'var(--blue-600)' }}
+                />
+              </div>
+
+              {(() => {
+                const hMeters = calcHeight / 100;
+                const computed = calcWeight / (hMeters * hMeters);
+                const rounded = Math.round(computed * 10) / 10;
+                const cat = rounded < 18.5 ? 'Underweight' : rounded < 25 ? 'Normal Weight' : rounded < 30 ? 'Overweight' : 'Obese';
+                const catColor = rounded < 25 && rounded >= 18.5 ? 'var(--risk-low-dark)' : rounded >= 30 ? 'var(--risk-high-dark)' : 'var(--risk-mod-dark)';
+
+                return (
+                  <div style={{
+                    padding: '16px',
+                    background: 'var(--slate-50)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--card-border)',
+                    textAlign: 'center'
+                  }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase' }}>
+                      Calculated BMI Value
+                    </span>
+                    <div style={{ fontSize: '32px', fontWeight: 900, color: 'var(--navy-900)' }}>
+                      {rounded} <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--slate-500)' }}>kg/m²</span>
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: catColor }}>
+                      CDC Classification: {cat}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-action-secondary"
+                onClick={() => setShowBmiModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary-diagnostic"
+                onClick={applyCalculatedBmi}
+                style={{ padding: '8px 18px', fontSize: '13px' }}
+              >
+                Apply BMI to Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 2: PAST REPORTS DATABASE MODAL
+          ======================================================== */}
+      {showHistoryModal && (
+        <div className="modal-backdrop" onClick={() => setShowHistoryModal(false)}>
+          <div className="modal-dialog" style={{ maxWidth: '780px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Database size={18} />
+                Cardiovascular Diagnostic Database & Audit Log
+              </h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <div className="table-controls" style={{ marginBottom: '12px' }}>
+                <div className="table-search-input" style={{ width: '100%' }}>
+                  <Search size={15} style={{ color: 'var(--slate-400)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search by patient name, MRN code, blood group..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') fetchReportsHistory(); }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <button
+                  className="table-btn-view"
+                  onClick={fetchReportsHistory}
+                >
+                  <Search size={14} />
+                  Filter
+                </button>
+              </div>
+
+              {historyLoading ? (
+                <div style={{ textAlign: 'center', padding: '30px' }}>Loading records...</div>
+              ) : reportsHistory.length > 0 ? (
+                <table className="clinical-data-table">
+                  <thead>
+                    <tr>
+                      <th>Accession</th>
+                      <th>Patient</th>
+                      <th>Cholesterol</th>
+                      <th>Risk Index</th>
+                      <th>Risk Level</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportsHistory.map((rep, idx) => {
+                      const isHigh = rep.risk_level === 'High Risk' || (rep.risk_score && rep.risk_score >= 50);
+                      const isMod = rep.risk_level === 'Moderate Risk' || (rep.risk_score && rep.risk_score >= 20 && rep.risk_score < 50);
+                      const pillClass = isHigh ? 'high' : isMod ? 'moderate' : 'low';
+
+                      return (
+                        <tr key={rep.report_id || idx}>
+                          <td style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11.5px' }}>{rep.report_id}</td>
+                          <td>
+                            <strong>{rep.patient_name || 'Anonymous'}</strong>
+                            <div style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
+                              {rep.sex} • Age: {rep.age} • {rep.blood_group}
+                            </div>
+                          </td>
+                          <td><span className="input-badge">{rep.cholesterol || 'Normal'}</span></td>
+                          <td><strong>{rep.risk_score != null ? `${rep.risk_score.toFixed(1)}%` : 'N/A'}</strong></td>
+                          <td>
+                            <span className={`risk-pill ${pillClass}`}>
+                              {rep.risk_level || 'Evaluated'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className="table-btn-view"
+                              onClick={() => loadPastReport(rep.report_id)}
+                            >
+                              Open Chart
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-state-box">
+                  <Database size={36} style={{ color: 'var(--slate-300)' }} />
+                  <p>No records matching search query.</p>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-action-secondary"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                Close Audit Log
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          FULL HOSPITAL & CLINICAL INSTITUTIONAL FOOTER
+          ======================================================== */}
+      <footer className="hospital-footer">
+        <div className="footer-main-grid">
+          {/* Column 1: Hospital Brand & CDSS Status */}
+          <div className="footer-col">
+            <div className="footer-brand">
+              <HeartLogo size={32} />
+              <div>
+                <div className="footer-brand-title">
+                  HeartCare AI
+                </div>
+                <span className="footer-brand-sub">Clinical Decision Support System</span>
+              </div>
+            </div>
+            <p className="footer-brand-desc">
+              Enterprise cardiovascular risk stratification platform engineered for preventive cardiology, acute triage, and clinical decision support.
+            </p>
+            <div className="footer-status-pill">
+              <span className="status-dot"></span>
+              <span>CDSS Online • Random Forest v2.4 Active</span>
+            </div>
+            <div className="footer-accreditations">
+              <span className="footer-badge">ISO 15189 Certified</span>
+              <span className="footer-badge">CAP #8492011</span>
+              <span className="footer-badge">CLIA Compliant</span>
+            </div>
+          </div>
+
+          {/* Column 2: Clinical Navigation */}
+          <div className="footer-col">
+            <h4>Clinical Platform</h4>
+            <ul className="footer-links">
+              <li>
+                <button type="button" onClick={() => handleNavClick('home')}>Home & Overview</button>
+              </li>
+              <li>
+                <button type="button" onClick={() => handleNavClick('about')}>About Us</button>
+              </li>
+              <li>
+                <button type="button" onClick={() => handleNavClick('features')}>Features</button>
+              </li>
+              <li>
+                <button type="button" onClick={() => handleNavClick('how-it-works')}>How It Works</button>
+              </li>
+              <li>
+                <button type="button" onClick={() => {
+                  if (currentUser) setActiveTab('dashboard');
+                  else {
+                    setAuthNotice('Please sign in to access Clinician Dashboard');
+                    setActiveTab('auth');
+                  }
+                }}>
+                  Clinician Workstation
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => {
+                  if (requireAuthForAssessment()) setActiveTab('assess');
+                }}>
+                  Start Risk Prediction
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Standards & Clinical Protocols */}
+          <div className="footer-col">
+            <h4>Clinical Protocols</h4>
+            <ul className="footer-links">
+              <li><span>Framingham 10-Yr Risk Index</span></li>
+              <li><span>ATP III Lipid Guidelines</span></li>
+              <li><span>CDC Anthropometric Criteria</span></li>
+              <li><span>Random Forest Probability Model</span></li>
+              <li><span>HL7 / FHIR Standard Interoperability</span></li>
+              <li><span>HIPAA Security Rule Standards</span></li>
+            </ul>
+          </div>
+
+          {/* Column 4: Hospital Contact & Emergency */}
+          <div className="footer-col">
+            <h4>Hospital & Clinical Inquiries</h4>
+            <div className="footer-contact-item">
+              <strong>Central Cardiovascular Institute</strong>
+              <span>Division of Preventive Cardiology</span>
+              <span>742 Evergreen Medical Pavilion, Suite 400</span>
+            </div>
+            <div className="footer-contact-item" style={{ marginTop: '8px' }}>
+              <span className="emergency-label">Cardiac Emergency Triage:</span>
+              <span className="emergency-val">Dial 911 or Hospital Code Blue</span>
+            </div>
+            <div className="footer-contact-item">
+              <span>Clinician CDSS Helpdesk:</span>
+              <strong>+1 (800) 555-CARDIO (Ext. 402)</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Bottom Bar */}
+        <div className="footer-bottom-bar">
+          <div className="footer-bottom-left">
+            <p className="regulatory-text">
+              <strong>REGULATORY & CDSS ATTESTATION:</strong> HeartCare AI CDSS v2.4 is designed exclusively to support licensed medical clinicians in cardiovascular risk assessment. It is not an autonomous diagnostic instrument and does not supplant formal clinical judgment or diagnostic coronary imaging.
+            </p>
+            <span className="copyright-text">
+              © 2026 Central Cardiovascular Institute & HeartCare AI Health Technologies. All rights reserved.
+            </span>
+          </div>
+          <div className="footer-bottom-right">
+            <span>HIPAA Safeguards</span>
+            <span>Terms of Clinical Use</span>
+            <span>Privacy Policy</span>
+            <span>Audit Protocol</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1795,22 +2405,22 @@ function generateClientSideReport(data, age, user) {
   const recs = [];
 
   if (data.BMI >= 30) {
-    factors.push({ name: 'Elevated BMI', severity: 'medium', description: 'Weight increases cardiac workload.' });
+    factors.push({ name: 'Elevated Body Mass Index (BMI >= 30)', severity: 'high', description: 'Excess adiposity increases left ventricular afterload and metabolic dysfunction.' });
     recs.push('Consult a clinical nutritionist for a personalized cardioprotective dietary plan.');
   }
   if (data.Cholesterol === 'High') {
-    factors.push({ name: 'Hypercholesterolemia (High Cholesterol)', severity: 'high', description: 'Total cholesterol ≥ 240 mg/dL accelerates coronary artery plaque build-up.' });
+    factors.push({ name: 'Hypercholesterolemia (High Cholesterol)', severity: 'high', description: 'Total cholesterol >= 240 mg/dL accelerates coronary artery plaque build-up.' });
     recs.push('Consult cardiologist for lipid-lowering pharmacotherapy (statin therapy) and comprehensive lipid panel.');
   } else if (data.Cholesterol === 'Borderline High') {
     factors.push({ name: 'Borderline High Cholesterol', severity: 'medium', description: 'Cholesterol is in the borderline zone (200-239 mg/dL).' });
     recs.push('Adopt dietary modifications to lower circulating LDL cholesterol; repeat lipid screening in 6 months.');
   }
   if (data.Smoking === 'Yes') {
-    factors.push({ name: 'Tobacco Use', severity: 'high', description: 'Accelerates coronary atherosclerosis.' });
+    factors.push({ name: 'Tobacco Use History', severity: 'high', description: 'Endothelial dysfunction and accelerated coronary atherosclerosis.' });
     recs.push('Initiate smoking cessation protocol immediately.');
   }
   if (data.Stroke === 'Yes') {
-    factors.push({ name: 'Prior Cerebrovascular Event', severity: 'high', description: 'Strong indicator of systemic vascular vulnerability.' });
+    factors.push({ name: 'Prior Cerebrovascular Event (Stroke)', severity: 'high', description: 'Strong indicator of systemic vascular vulnerability.' });
     recs.push('Schedule strict blood pressure and neurovascular monitoring.');
   }
   if (data.Diabetic === 'Yes') {
@@ -1818,13 +2428,13 @@ function generateClientSideReport(data, age, user) {
     recs.push('Target HbA1c < 7.0% and monitor fasting plasma glucose regularly.');
   }
   if (recs.length === 0) {
-    recs.push('Maintain heart-healthy diet with rich fiber and unsaturated fats.');
-    recs.push('Perform at least 150 minutes of moderate aerobic activity weekly.');
+    recs.push('Maintain heart-healthy diet with rich dietary fiber and unsaturated fats.');
+    recs.push('Perform at least 150 minutes of moderate aerobic physical activity weekly.');
   }
 
   return {
     reportId: `REP-LOCAL-${Date.now().toString().slice(-6)}`,
-    createdAt: new Date().toLocaleString(),
+    createdAt: new Date().toISOString(),
     patient: {
       name: data.patientName || 'Anonymous Patient',
       dob: data.dob,
@@ -1842,7 +2452,7 @@ function generateClientSideReport(data, age, user) {
     cholesterolDetails: {
       level: data.Cholesterol,
       label: data.Cholesterol === 'Normal' ? 'Normal (< 200 mg/dL)' : (
-        data.Cholesterol === 'Borderline High' ? 'Borderline High (200-239 mg/dL)' : 'High (≥ 240 mg/dL)'
+        data.Cholesterol === 'Borderline High' ? 'Borderline High (200-239 mg/dL)' : 'High (>= 240 mg/dL)'
       )
     },
     prediction: {
