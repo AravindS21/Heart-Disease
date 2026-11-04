@@ -1379,7 +1379,7 @@ export default function App() {
                 <div className="input-field-group">
                   <label className="input-label">
                     <User size={14} />
-                    Full Clinician Name
+                    Full Name
                   </label>
                   <input
                     type="text"
@@ -1394,7 +1394,7 @@ export default function App() {
                 <div className="input-field-group">
                   <label className="input-label">
                     <UserCheck size={14} />
-                    Institutional Email
+                    Email
                   </label>
                   <input
                     type="email"
@@ -1409,7 +1409,7 @@ export default function App() {
                 <div className="input-field-group">
                   <label className="input-label">
                     <Building2 size={14} />
-                    Clinical Specialty / Role
+                    Role
                   </label>
                   <select
                     value={regRole}
