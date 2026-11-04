@@ -29,48 +29,18 @@
 The platform is engineered as a decoupled, microservices-based full-stack solution:
 
 ```
-Heart Disease/
-├── frontend/                     # React 19 + Vite 8 Single Page Web App
-│   ├── public/
-│   │   ├── favicon.svg           # Heart pulse SVG icon
-│   │   ├── favicon.png           # Heart pulse PNG favicon
-│   │   └── favicon.ico           # Web browser tag icon
-│   ├── src/
-│   │   ├── components/Icons.jsx  # SVG Icons & Medical Brand Logos
-│   │   ├── App.jsx               # Complete Multi-View Routing & State Engine
-│   │   ├── App.css               # Polished Healthcare Design System (Light/Dark mode)
-│   │   └── main.jsx
-│   └── package.json
-│
-├── ml-service/                   # Python Flask ML Microservice (Port 5000)
-│   ├── app.py                    # REST API + Auth + Prediction + SQLite backup
-│   ├── train_model.py            # Random Forest training & probability calibration
-│   ├── heart_disease_model.joblib# Serialized calibrated ML model artifact
-│   ├── test_api.py               # Automated ML inference integration test
-│   └── test_auth.py              # Automated auth & salt verification test
-│
-├── backend/                      # Java 25 + Spring Boot Enterprise Gateway (Port 8080)
-│   ├── src/main/java/backend/
-│   │   ├── controller/           # AuthController & HeartDiseaseController
-│   │   ├── service/              # AuthService (MySQL Stored Procedures) & HeartDiseaseService
-│   │   ├── entity/               # User & PatientReport JPA Entities
-│   │   ├── repository/           # UserRepository & PatientReportRepository
-│   │   ├── dto/                  # Request / Response DTO models
-│   │   └── util/PasswordUtil.java# SHA-256 + 16-byte secure random salt hashing
-│   ├── src/main/resources/
-│   │   ├── application.properties# MySQL DataSource & ML URL configuration
-│   │   └── schema.sql            # Spring Boot schema backup
-│   └── pom.xml                   # Maven dependencies
-│
-├── database/                     # MySQL Production Database Assets
-│   └── heart_disease_db.sql      # Database schema, 3 tables & 7 stored procedures
-│
-├── dataset/                      # CDC BRFSS Heart Disease Training Dataset
-│   └── heart_2020_cleaned.csv
-│
-├── run_app.bat                   # 1-Click Launch: Python ML (5000) + React (5173)
-├── run_spring_backend.bat        # 1-Click Launch: Java Spring Boot Backend (8080)
-└── README.md
+[ React Modern Frontend (Port 5173) ]
+                 │
+                 │ HTTP / REST (/api/*)
+                 ▼
+[ Java Spring Boot CDSS Backend (Port 8080) ]
+        │                                  │
+        │ JDBC / JPA / Stored Procedures   │ REST (POST /api/predict)
+        ▼                                  ▼
+[ MySQL Database (Port 3306) ]    [ Python ML Microservice (Port 5000) ]
+  • heart_disease_db                • Random Forest Pipeline (Joblib)
+  • 3 Tables (users, reports, logs) • CDC BRFSS Trained (319,795 Cohorts)
+  • 7 Stored Procedures             • Calibrated Probability Inference
 ```
 
 ### Technology Highlights:
@@ -160,20 +130,19 @@ The database script [`database/heart_disease_db.sql`](file:///d:/Projects/Heart%
 
 ### 1. Database Setup (MySQL)
 Make sure your MySQL server is running (e.g. MySQL 8.0, XAMPP, or MariaDB). Then import the schema and stored procedures:
-```bash
-# Using MySQL Command Line Client:
-mysql -u root -p < "d:\Projects\Heart Disease\database\heart_disease_db.sql"
-```
-*(Or open `database/heart_disease_db.sql` in MySQL Workbench / phpMyAdmin and execute it).*
+- **Option A (Automatic)**: Double-click [`import_database.bat`](file:///d:/Projects/Heart%20Disease/import_database.bat)
+- **Option B (Command Line)**:
+  ```bash
+  mysql -u root -p < database/heart_disease_db.sql
+  ```
+- **Option C (Workbench / phpMyAdmin)**: Open and execute [`database/heart_disease_db.sql`](file:///d:/Projects/Heart%20Disease/database/heart_disease_db.sql).
 
 ### 2. Launching with Scripts (Recommended for Windows)
-- **Launch Frontend & ML Service**:
+- **Launch Full Integrated Suite**:
   Double-click [`run_app.bat`](file:///d:/Projects/Heart%20Disease/run_app.bat)
-  - Starts Python ML microservice on `http://localhost:5000`
-  - Starts React web portal on `http://localhost:5173`
-- **Launch Spring Boot Gateway (Optional)**:
-  Double-click [`run_spring_backend.bat`](file:///d:/Projects/Heart%20Disease/run_spring_backend.bat)
-  - Starts Spring Boot application on `http://localhost:8080`
+  - Starts Python ML Microservice on `http://localhost:5000`
+  - Starts Java Spring Boot Gateway on `http://localhost:8080`
+  - Starts React Modern Medical Portal on `http://localhost:5173`
 
 ### 3. Manual Startup
 

@@ -252,15 +252,26 @@ export default function App() {
   // Load dashboard statistics and recent evaluations from backend
   const loadDashboardData = async () => {
     try {
-      const statsRes = await fetch('/api/stats');
-      if (statsRes.ok) {
+      let statsRes;
+      try {
+        statsRes = await fetch('/api/stats');
+      } catch {
+        statsRes = await fetch('http://localhost:5000/api/stats');
+      }
+      if (statsRes && statsRes.ok) {
         const stats = await statsRes.json();
         setDashboardStats(stats);
       }
-      const repRes = await fetch('/api/reports');
-      if (repRes.ok) {
+
+      let repRes;
+      try {
+        repRes = await fetch('/api/reports');
+      } catch {
+        repRes = await fetch('http://localhost:5000/api/reports');
+      }
+      if (repRes && repRes.ok) {
         const data = await repRes.json();
-        setRecentReports(data.reports || []);
+        setRecentReports(Array.isArray(data) ? data : (data.reports || []));
       }
     } catch {
       // Backend unavailable; mock stats will remain
@@ -741,13 +752,37 @@ export default function App() {
     };
 
     try {
-      const response = await fetch('/api/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // 1. Primary: Spring Boot Enterprise Gateway (/api/predict) -> ML Microservice -> MySQL
+      let response;
+      try {
+        response = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        // Fallback directly to Python ML microservice on port 5000
+        response = await fetch('http://localhost:5000/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (!response.ok) {
+        // Retry direct Python microservice if gateway returned 5xx/4xx
+        const directRes = await fetch('http://localhost:5000/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (directRes.ok) {
+          const reportData = await directRes.json();
+          setReport(reportData);
+          setActiveTab('report');
+          loadDashboardData();
+          return;
+        }
         throw new Error(`Server returned ${response.status}`);
       }
 
@@ -756,7 +791,7 @@ export default function App() {
       setActiveTab('report');
       loadDashboardData();
     } catch {
-      // Client-side fallback if ML microservice is unreachable
+      // Client-side fallback if both services are offline
       const fallbackReport = generateClientSideReport(payload, computedAge, currentUser);
       setReport(fallbackReport);
       setActiveTab('report');

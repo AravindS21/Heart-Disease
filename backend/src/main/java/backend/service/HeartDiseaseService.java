@@ -63,10 +63,62 @@ public class HeartDiseaseService {
     }
 
     public List<PatientReport> getReportHistory(String search) {
-        if (search != null && !search.trim().isEmpty()) {
-            return repository.findByPatientNameContainingIgnoreCaseOrPhoneContaining(search, search);
+        try {
+            if (search != null && !search.trim().isEmpty()) {
+                return repository.findByPatientNameContainingIgnoreCaseOrPhoneContaining(search, search);
+            }
+            return repository.findAllByOrderByCreatedAtDesc();
+        } catch (Exception e) {
+            System.err.println("Warning: Unable to fetch report history from database: " + e.getMessage());
+            return Collections.emptyList();
         }
-        return repository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public Object getReportById(String id) {
+        try {
+            Optional<PatientReport> opt = repository.findById(id);
+            if (opt.isPresent()) {
+                PatientReport report = opt.get();
+                if (report.getReportDataJson() != null && !report.getReportDataJson().isEmpty()) {
+                    try {
+                        return objectMapper.readValue(report.getReportDataJson(), Object.class);
+                    } catch (Exception ignored) {}
+                }
+                return report;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Unable to query report by id: " + e.getMessage());
+        }
+        throw new IllegalArgumentException("Report not found for ID: " + id);
+    }
+
+    public Map<String, Object> getDashboardStats() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        try {
+            long total = repository.count();
+            List<PatientReport> reports = repository.findAll();
+            long highRisk = reports.stream().filter(r -> "High Risk".equalsIgnoreCase(r.getRiskLevel())).count();
+            long moderateRisk = reports.stream().filter(r -> "Moderate Risk".equalsIgnoreCase(r.getRiskLevel())).count();
+            long lowRisk = reports.stream().filter(r -> "Low Risk".equalsIgnoreCase(r.getRiskLevel())).count();
+            double avgScore = reports.isEmpty() ? 0.0 :
+                    Math.round((reports.stream().mapToDouble(r -> r.getRiskScore() != null ? r.getRiskScore() : 0.0).average().orElse(0.0)) * 10.0) / 10.0;
+
+            stats.put("totalAssessments", total);
+            stats.put("highRiskCount", highRisk);
+            stats.put("moderateRiskCount", moderateRisk);
+            stats.put("lowRiskCount", lowRisk);
+            stats.put("normalCount", lowRisk);
+            stats.put("avgRiskScore", avgScore);
+        } catch (Exception e) {
+            // Default baseline if database is starting up
+            stats.put("totalAssessments", 0);
+            stats.put("highRiskCount", 0);
+            stats.put("moderateRiskCount", 0);
+            stats.put("lowRiskCount", 0);
+            stats.put("normalCount", 0);
+            stats.put("avgRiskScore", 0.0);
+        }
+        return stats;
     }
 
     private MedicalReportResponse fallbackEvaluation(HeartDiseasePredictionRequest req) {
