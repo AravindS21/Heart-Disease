@@ -6,6 +6,7 @@ import backend.dto.RegisterRequest;
 import backend.dto.UserDto;
 import backend.entity.User;
 import backend.repository.UserRepository;
+import backend.util.JwtUtil;
 import backend.util.PasswordUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -136,7 +137,7 @@ public class AuthService {
         }
 
         UserDto userDto = mapToDto(savedUser);
-        String token = "HCAI-" + UUID.randomUUID().toString();
+        String token = JwtUtil.generateToken(userDto.getId(), userDto.getEmail(), userDto.getName(), userDto.getRole());
 
         String successMessage = (spExecuted && spMessage != null && !spMessage.trim().isEmpty())
                 ? spMessage.trim()
@@ -193,7 +194,7 @@ public class AuthService {
         UserDto userDto = mapToDto(user);
         userDto.setLastLoginAt(LocalDateTime.now());
 
-        String token = "HCAI-" + UUID.randomUUID().toString();
+        String token = JwtUtil.generateToken(userDto.getId(), userDto.getEmail(), userDto.getName(), userDto.getRole());
 
         return AuthResponse.builder()
                 .message("Authentication successful. Welcome, " + user.getFullName() + ".")

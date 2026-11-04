@@ -5,12 +5,14 @@ import backend.dto.LoginRequest;
 import backend.dto.RegisterRequest;
 import backend.dto.UserDto;
 import backend.service.AuthService;
+import backend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -70,8 +72,21 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<?> verify() {
-        return ResponseEntity.ok(Map.of("status", "ACTIVE", "service", "HeartCare AI Authentication CDSS"));
+    public ResponseEntity<?> verify(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "ACTIVE");
+        response.put("service", "HeartCare AI Authentication CDSS");
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            if (JwtUtil.validateToken(token)) {
+                response.put("authenticated", true);
+                response.put("claims", JwtUtil.extractClaims(token));
+                return ResponseEntity.ok(response);
+            }
+        }
+        response.put("authenticated", false);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

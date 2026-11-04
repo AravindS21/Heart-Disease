@@ -11,6 +11,9 @@ import datetime
 import uuid
 import hashlib
 import secrets
+import base64
+import hmac
+import time
 import joblib
 import pandas as pd
 from flask import Flask, request, jsonify, make_response
@@ -126,6 +129,50 @@ def init_db():
 
 init_db()
 
+JWT_SECRET = "HeartCareAI_SuperSecretSecurityKey_Cardiovascular_CDSS_2026_SecureKey"
+
+def generate_jwt(user_id, email, name, role):
+    now = int(time.time())
+    header = {"alg": "HS256", "typ": "JWT"}
+    payload = {
+        "sub": user_id or "USR-UNKNOWN",
+        "email": email or "",
+        "name": name or "Clinician",
+        "role": role or "Cardiologist",
+        "iss": "HeartCareAI",
+        "iat": now,
+        "exp": now + 86400
+    }
+    def b64url(data):
+        return base64.urlsafe_b64encode(json.dumps(data).encode('utf-8')).rstrip(b'=').decode('utf-8')
+
+    h_b64 = b64url(header)
+    p_b64 = b64url(payload)
+    sig_raw = hmac.new(JWT_SECRET.encode('utf-8'), f"{h_b64}.{p_b64}".encode('utf-8'), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig_raw).rstrip(b'=').decode('utf-8')
+    return f"{h_b64}.{p_b64}.{sig_b64}"
+
+def verify_jwt(token):
+    try:
+        parts = token.strip().split('.')
+        if len(parts) != 3:
+            return False, None
+        content = f"{parts[0]}.{parts[1]}"
+        sig_raw = hmac.new(JWT_SECRET.encode('utf-8'), content.encode('utf-8'), hashlib.sha256).digest()
+        expected_sig = base64.urlsafe_b64encode(sig_raw).rstrip(b'=').decode('utf-8')
+        if not secrets.compare_digest(parts[2], expected_sig):
+            return False, None
+        
+        # Decode payload with proper padding
+        pad = len(parts[1]) % 4
+        p_b64 = parts[1] + ('=' * (4 - pad) if pad else '')
+        payload = json.loads(base64.urlsafe_b64decode(p_b64.encode('utf-8')).decode('utf-8'))
+        if payload.get('exp', 0) < int(time.time()):
+            return False, None
+        return True, payload
+    except Exception:
+        return False, None
+
 def hash_password(password, salt=None):
     import secrets
     if not salt:
@@ -212,10 +259,11 @@ def register():
             'licenseNumber': license_number,
             'createdAt': created_at
         }
+        jwt_token = generate_jwt(user_id, email, name, role)
         return jsonify({
-            'message': 'Registration successful. Welcome to HeartCare AI.',
+            'message': 'Registration successful. Please proceed to login.',
             'user': user_payload,
-            'token': f"HCAI-{uuid.uuid4().hex}"
+            'token': jwt_token
         }), 201
 
     except Exception as e:
@@ -259,14 +307,13 @@ def login():
             'institution': row['institution'],
             'phone': row['phone'],
             'licenseNumber': row['license_number'] if 'license_number' in row.keys() else '',
-            'phone': row['phone'],
-            'licenseNumber': row['license_number'] if 'license_number' in row.keys() else '',
             'createdAt': row['created_at']
         }
+        jwt_token = generate_jwt(row['id'], row['email'], row['name'], row['role'])
         return jsonify({
             'message': f"Authentication successful. Welcome, {row['name']}.",
             'user': user_payload,
-            'token': f"HCAI-{uuid.uuid4().hex}"
+            'token': jwt_token
         }), 200
 
     except Exception as e:
