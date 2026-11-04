@@ -44,7 +44,17 @@ import {
   Home,
   Info,
   UserPlus,
-  HeartLogo
+  HeartLogo,
+  Target,
+  Diamond,
+  UsersGroup,
+  Lightbulb,
+  AiChip,
+  ReactLogo,
+  SpringBootLogo,
+  PythonLogo,
+  MySQLLogo,
+  FlaskLogo
 } from './components/Icons';
 
 const AGE_CATEGORIES = [
@@ -62,11 +72,10 @@ const CHOLESTEROL_OPTIONS = [
 
 const CLINICAL_ROLES = [
   'Cardiologist',
-  'Interventional Cardiologist',
+  'Public User',
   'General Physician',
-  'Preventive Cardiology Fellow',
-  'Cardiovascular Clinical Specialist',
-  'Clinical Researcher'
+  'Doctor',
+  'Student'
 ];
 
 const INITIAL_FORM = {
@@ -228,7 +237,7 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Navigation scroll helper for Home page links
+  // Navigation scroll helper for Home and About page links
   const handleNavClick = (sectionId) => {
     setActiveHomeSection(sectionId);
     if (sectionId === 'home') {
@@ -236,7 +245,12 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (sectionId === 'features' || sectionId === 'about' || sectionId === 'how-it-works') {
+    if (sectionId === 'about') {
+      setActiveTab('about');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (sectionId === 'features' || sectionId === 'how-it-works') {
       setActiveTab('home');
       setTimeout(() => {
         const el = document.getElementById('features');
@@ -593,7 +607,7 @@ export default function App() {
         <nav className="nav-links">
           <button
             type="button"
-            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'home' ? 'active' : ''}`}
+            className={`nav-link-btn ${activeTab === 'home' ? 'active' : ''}`}
             onClick={() => handleNavClick('home')}
           >
             <Home size={15} />
@@ -601,24 +615,11 @@ export default function App() {
           </button>
           <button
             type="button"
-            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'about' ? 'active' : ''}`}
+            className={`nav-link-btn ${activeTab === 'about' ? 'active' : ''}`}
             onClick={() => handleNavClick('about')}
           >
+            <Info size={15} />
             About
-          </button>
-          <button
-            type="button"
-            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'features' ? 'active' : ''}`}
-            onClick={() => handleNavClick('features')}
-          >
-            Features
-          </button>
-          <button
-            type="button"
-            className={`nav-link-btn ${activeTab === 'home' && activeHomeSection === 'how-it-works' ? 'active' : ''}`}
-            onClick={() => handleNavClick('how-it-works')}
-          >
-            How It Works
           </button>
           <button
             type="button"
@@ -836,6 +837,180 @@ export default function App() {
               <span>A healthier tomorrow starts with awareness. Check your heart risk today!</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          VIEW: ABOUT HEARTCARE AI PAGE (Matches Reference Image)
+          ======================================================== */}
+      {activeTab === 'about' && (
+        <div className="about-view">
+          {/* About Hero Section */}
+          <section className="about-hero">
+            <div className="about-hero-left">
+              <div className="about-project-pill">
+                <Info size={14} />
+                <span>About Our Project</span>
+              </div>
+
+              <h1 className="about-hero-title">
+                HeartCare <span className="highlight-ai">AI</span>
+              </h1>
+
+              <h2 className="about-hero-subtitle">
+                Smart AI-Powered Heart Disease Prediction for a Healthier Tomorrow
+              </h2>
+
+              <p className="about-hero-desc">
+                HeartCare AI is an intelligent web application that uses Machine Learning to predict the risk of heart disease based on medical parameters. Our goal is to help people take early action and <strong>live a healthier life.</strong>
+              </p>
+
+              <div className="about-hero-cta-group">
+                <button
+                  type="button"
+                  className="btn-about-mission"
+                  onClick={() => {
+                    const el = document.getElementById('our-mission-card');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <HeartPulse size={18} />
+                  Our Mission
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-about-learn"
+                  onClick={() => {
+                    const el = document.getElementById('about-technology-card');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <Lightbulb size={18} />
+                  Learn More
+                </button>
+              </div>
+            </div>
+
+            <div className="about-hero-right">
+              <img
+                src="/images/hero-doctor-heart.png"
+                alt="HeartCare AI - Heart Disease Prediction 3D Heart Visual"
+                className="about-doctor-artwork"
+              />
+            </div>
+          </section>
+
+          {/* Three Pillars Grid (Our Mission, Our Vision, Why Choose Us?) */}
+          <section className="about-pillars-grid">
+            {/* Card 1: Our Mission */}
+            <div className="about-pillar-card mission-card" id="our-mission-card">
+              <div className="pillar-icon-badge target-badge">
+                <Target size={28} />
+              </div>
+              <div className="pillar-card-body">
+                <h3 className="pillar-card-title">Our Mission</h3>
+                <p className="pillar-card-desc">
+                  To leverage the power of Artificial Intelligence for early detection of heart disease, promoting preventive healthcare and better lives.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 2: Our Vision */}
+            <div className="about-pillar-card vision-card" id="our-vision-card">
+              <div className="pillar-icon-badge diamond-badge">
+                <Diamond size={28} />
+              </div>
+              <div className="pillar-card-body">
+                <h3 className="pillar-card-title">Our Vision</h3>
+                <p className="pillar-card-desc">
+                  A healthier world where heart disease is detected early and prevented through advanced technology.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 3: Why Choose Us? */}
+            <div className="about-pillar-card why-us-card" id="why-choose-us-card">
+              <div className="pillar-icon-badge team-badge">
+                <UsersGroup size={26} />
+              </div>
+              <div className="pillar-card-body">
+                <h3 className="pillar-card-title">Why Choose Us?</h3>
+                <ul className="why-us-checklist">
+                  <li className="why-us-item">
+                    <span className="why-us-check-icon">✔</span>
+                    <span>AI-Powered Prediction</span>
+                  </li>
+                  <li className="why-us-item">
+                    <span className="why-us-check-icon">✔</span>
+                    <span>User-Friendly Interface</span>
+                  </li>
+                  <li className="why-us-item">
+                    <span className="why-us-check-icon">✔</span>
+                    <span>Secure & Reliable</span>
+                  </li>
+                  <li className="why-us-item">
+                    <span className="why-us-check-icon">✔</span>
+                    <span>Data-Driven Insights</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Bottom Card: About the Technology & Tech Stack Logos */}
+          <section className="about-technology-card" id="about-technology-card">
+            <div className="about-tech-info-left">
+              <div className="tech-chip-icon-box">
+                <AiChip size={38} />
+              </div>
+              <div className="about-tech-info-text">
+                <h3 className="about-tech-title">About the Technology</h3>
+                <p className="about-tech-desc">
+                  Our application uses a Random Forest Machine Learning model, trained on trusted medical datasets, to analyze key health indicators such as age, blood pressure, cholesterol, and more, providing accurate risk assessment.
+                </p>
+              </div>
+            </div>
+
+            <div className="about-tech-divider"></div>
+
+            <div className="about-tech-logos-row">
+              <div className="tech-logo-item">
+                <div className="tech-logo-icon">
+                  <ReactLogo size={38} />
+                </div>
+                <span className="tech-logo-name">React.js</span>
+              </div>
+
+              <div className="tech-logo-item">
+                <div className="tech-logo-icon">
+                  <SpringBootLogo size={38} />
+                </div>
+                <span className="tech-logo-name">Spring Boot</span>
+              </div>
+
+              <div className="tech-logo-item">
+                <div className="tech-logo-icon">
+                  <PythonLogo size={38} />
+                </div>
+                <span className="tech-logo-name">Python</span>
+              </div>
+
+              <div className="tech-logo-item">
+                <div className="tech-logo-icon">
+                  <MySQLLogo size={42} />
+                </div>
+                <span className="tech-logo-name">MySQL</span>
+              </div>
+
+              <div className="tech-logo-item">
+                <div className="tech-logo-icon">
+                  <FlaskLogo size={34} />
+                </div>
+                <span className="tech-logo-name">Flask</span>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -1098,8 +1273,8 @@ export default function App() {
               <div className="auth-icon-badge">
                 <ShieldCheck size={28} />
               </div>
-              <h2>Clinician Portal</h2>
-              <p>Restricted access for authorized medical personnel & cardiology staff</p>
+              <h2>HeartCare AI</h2>
+              <p>Making heart health assessment simpler, smarter, and faster.</p>
             </div>
 
             {/* Auth Notice (e.g. redirected from attempting assessment) */}
@@ -1120,7 +1295,7 @@ export default function App() {
                   setAuthSuccess('');
                 }}
               >
-                Clinician Sign In
+                Sign In
               </button>
               <button
                 className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
@@ -1130,27 +1305,9 @@ export default function App() {
                   setAuthSuccess('');
                 }}
               >
-                Staff Registration
+                Registration
               </button>
             </div>
-
-            {/* One-Click Demo Clinician Box (on Login tab) */}
-            {authMode === 'login' && (
-              <div className="demo-account-box">
-                <div className="demo-account-info">
-                  <span className="demo-account-title">Pre-Configured Demo Account</span>
-                  <span className="demo-account-creds">doctor@cardioguard.com • password123</span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-fill-demo"
-                  onClick={fillAndSubmitDemoLogin}
-                  disabled={authLoading}
-                >
-                  Quick Sign In
-                </button>
-              </div>
-            )}
 
             {/* Error & Success Messages */}
             {authError && (
@@ -1213,7 +1370,7 @@ export default function App() {
                   className="btn-submit-auth"
                   disabled={authLoading}
                 >
-                  {authLoading ? 'Verifying Credentials...' : 'Authenticate & Enter Workstation'}
+                  {authLoading ? 'Verifying Credentials...' : 'Login'}
                 </button>
               </form>
             ) : (
@@ -1267,21 +1424,6 @@ export default function App() {
 
                 <div className="input-field-group">
                   <label className="input-label">
-                    <Building2 size={14} />
-                    Hospital / Healthcare Institution
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Central Cardiovascular Institute"
-                    value={regInstitution}
-                    onChange={(e) => setRegInstitution(e.target.value)}
-                    className="clinical-input"
-                  />
-                </div>
-
-                <div className="input-field-group">
-                  <label className="input-label">
                     <Lock size={14} />
                     Create Password
                   </label>
@@ -1315,7 +1457,7 @@ export default function App() {
                   className="btn-submit-auth"
                   disabled={authLoading}
                 >
-                  {authLoading ? 'Registering Account...' : 'Complete Staff Registration'}
+                  {authLoading ? 'Registering Account...' : 'Register'}
                 </button>
               </form>
             )}

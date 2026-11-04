@@ -489,5 +489,110 @@ export function HeartLogo({ className = "w-8 h-8", size = 36 }) {
   );
 }
 
+export function Target({ className = "w-6 h-6", size = 26 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function Diamond({ className = "w-6 h-6", size = 26 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M6 3h12l4 7-10 11L2 10l4-7z" />
+      <path d="M2 10h20" />
+      <path d="M10 3 8 10l4 11 4-11-2-7" />
+    </svg>
+  );
+}
+
+export function UsersGroup({ className = "w-6 h-6", size = 26 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+export function Lightbulb({ className = "w-5 h-5", size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+    </svg>
+  );
+}
+
+export function AiChip({ className = "w-8 h-8", size = 32 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className}>
+      <rect x="5" y="5" width="22" height="22" rx="5" fill="#a855f7" />
+      <path d="M2 10h3M2 16h3M2 22h3M27 10h3M27 16h3M27 22h3M10 2v3M16 2v3M22 2v3M10 27v3M16 27v3M22 27v3" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
+      <text x="16" y="20.5" fill="#ffffff" fontSize="11" fontWeight="800" fontFamily="system-ui, -apple-system, sans-serif" textAnchor="middle">AI</text>
+    </svg>
+  );
+}
+
+export function ReactLogo({ size = 38 }) {
+  return (
+    <svg width={size} height={size} viewBox="-11.5 -10.23174 23 20.46348">
+      <circle cx="0" cy="0" r="2.05" fill="#00d8ff" />
+      <g stroke="#00d8ff" strokeWidth="1.2" fill="none">
+        <ellipse rx="11" ry="4.2" />
+        <ellipse rx="11" ry="4.2" transform="rotate(60)" />
+        <ellipse rx="11" ry="4.2" transform="rotate(120)" />
+      </g>
+    </svg>
+  );
+}
+
+export function SpringBootLogo({ size = 38 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="18" r="16" fill="#6db33f" />
+      <path d="M18 10a8 8 0 0 0-8 8c0 4.4 3.6 8 8 8s8-3.6 8-8c0-4.4-3.6-8-8-8zm0 13c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5z" fill="#ffffff" />
+      <path d="M18 6v5M18 25v5M6 18h5M25 18h5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PythonLogo({ size = 38 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
+      <path d="M17.6 3c-4.8 0-4.5 2.1-4.5 2.1l.01 2.2h4.6v.7h-6.4c-2.9 0-5.1 1.7-5.1 5 0 3.3 1.8 5 4.7 5h1.7v-2.4c0-2.8 2.4-5.2 5.2-5.2h4.5c2.3 0 4.2-1.9 4.2-4.2V6.6C26.5 4.3 23.3 3 17.6 3zm-2.5 2.2a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z" fill="#387eb8" />
+      <path d="M18.4 33c4.8 0 4.5-2.1 4.5-2.1l-.01-2.2h-4.6v-.7h6.4c2.9 0 5.1-1.7 5.1-5 0-3.3-1.8-5-4.7-5h-1.7v2.4c0 2.8-2.4 5.2-5.2 5.2h-4.5c-2.3 0-4.2 1.9-4.2 4.2v2.6c0 2.3 3.2 3.6 8.9 3.6zm2.5-2.2a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2z" fill="#ffe052" />
+    </svg>
+  );
+}
+
+export function MySQLLogo({ size = 42 }) {
+  return (
+    <svg width={size} height={size * 0.75} viewBox="0 0 54 36" fill="none">
+      <path d="M8 24C12 18 18 10 26 8c-3 4-4 8-3 12-4-1-8 0-15 4z" fill="#00758f" />
+      <path d="M26 8c4-2 9-2 14 1-3 1-5 4-6 7 4-1 9 0 13 4-8-1-14 2-21-12z" fill="#00758f" />
+      <path d="M4 27c5-2 10-2 15 1-4 2-9 2-15-1z" fill="#f29111" />
+    </svg>
+  );
+}
+
+export function FlaskLogo({ size = 34 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2v4a4 4 0 0 1-1.5 3.2L3.8 14.8A4 4 0 0 0 6.3 21h11.4a4 4 0 0 0 2.5-6.2L15.5 9.2A4 4 0 0 1 14 6V2" />
+      <line x1="8" y1="2" x2="16" y2="2" />
+      <line x1="7" y1="16" x2="17" y2="16" />
+    </svg>
+  );
+}
+
 
 
