@@ -27,6 +27,12 @@ public class PasswordUtil {
     }
 
     public static boolean verifyPassword(String inputPassword, String storedHash, String salt) {
+        if (inputPassword == null || storedHash == null) {
+            return false;
+        }
+        if (salt == null || salt.trim().isEmpty()) {
+            return inputPassword.equals(storedHash);
+        }
         String computedHash = hashPassword(inputPassword, salt);
         return MessageDigest.isEqual(
                 computedHash.getBytes(StandardCharsets.UTF_8),

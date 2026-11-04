@@ -299,7 +299,7 @@ DELIMITER ;
 
 -- ============================================================================
 -- SEED DEFAULT AUTHORIZED CLINICIAN ACCOUNTS
--- Password: password123 (Salt: 7b3e1c9840f1a52d | Hash: 8b0660611e9a28c31cb81c3c951ef4eb84e5b9821fcf4e48be8bebc760a953e9)
+-- Password: password123 (Salt: 7b3e1c9840f1a52d | Hash: 8733806f8a608d3a091d75f26172deb0e698d417dbe5e48b91f43a1c5bef0e1f)
 -- ============================================================================
 INSERT INTO users (
     user_id, full_name, email, password_hash, password_salt, 
@@ -309,7 +309,7 @@ SELECT
     'USR-DEMO-01', 
     'Dr. Alistair Reed, MD', 
     'doctor@cardioguard.com', 
-    '8b0660611e9a28c31cb81c3c951ef4eb84e5b9821fcf4e48be8bebc760a953e9', 
+    '8733806f8a608d3a091d75f26172deb0e698d417dbe5e48b91f43a1c5bef0e1f', 
     '7b3e1c9840f1a52d', 
     'Cardiologist', 
     'Central Cardiovascular Institute', 
@@ -327,7 +327,7 @@ SELECT
     'USR-DEMO-02', 
     'Dr. Sarah Chen, MD', 
     'schen@heartcare.ai', 
-    '8b0660611e9a28c31cb81c3c951ef4eb84e5b9821fcf4e48be8bebc760a953e9', 
+    '8733806f8a608d3a091d75f26172deb0e698d417dbe5e48b91f43a1c5bef0e1f', 
     '7b3e1c9840f1a52d', 
     'Preventive Cardiologist', 
     'Institute of Cardiovascular Sciences', 
