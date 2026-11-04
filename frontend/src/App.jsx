@@ -457,7 +457,7 @@ export default function App() {
     }, 350);
   };
 
-  // Sign In Handler with JWT Authentication & Multi-Tier Gateway Support
+  // Sign In Handler with Strict Credential Validation & Signed JWT Issuance
   const handleLoginSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setAuthLoading(true);
@@ -467,8 +467,15 @@ export default function App() {
     const cleanEmail = (loginEmail || '').trim().toLowerCase();
     const cleanPassword = (loginPassword || '').trim();
 
+    // 1. Basic field validation
     if (!cleanEmail || !cleanPassword) {
       setAuthError('Please enter both your clinician email and password.');
+      setAuthLoading(false);
+      return;
+    }
+
+    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setAuthError('Please enter a valid clinician email address.');
       setAuthLoading(false);
       return;
     }
@@ -477,8 +484,10 @@ export default function App() {
     let authenticatedUser = null;
     let tokenReceived = null;
     let successMessage = '';
+    let serverRejected = false;
+    let serverErrorMessage = '';
 
-    // 1. Try Spring Boot Auth Endpoint (port 8080)
+    // 2. Try Spring Boot Auth Endpoint (port 8080)
     try {
       const res = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
@@ -492,12 +501,23 @@ export default function App() {
           tokenReceived = resData.token;
           successMessage = resData.message || `Welcome back, ${authenticatedUser.name}.`;
         }
+      } else if (res.status === 401 || res.status === 400 || res.status === 403 || res.status === 404) {
+        serverRejected = true;
+        const resData = await res.json().catch(() => ({}));
+        serverErrorMessage = resData?.error || 'Invalid email address or password.';
       }
     } catch {
-      // Spring Boot offline
+      // Spring Boot offline (network failure)
     }
 
-    // 2. Fallback to Flask / Vite Proxy Auth Endpoint (port 5000)
+    // If Spring Boot server explicitly rejected credentials, stop immediately
+    if (serverRejected) {
+      setAuthError(serverErrorMessage || 'Invalid email address or password.');
+      setAuthLoading(false);
+      return;
+    }
+
+    // 3. Fallback to Flask / Vite Proxy Auth Endpoint (/api/auth/login)
     if (!authenticatedUser) {
       try {
         const res = await fetch('/api/auth/login', {
@@ -512,16 +532,31 @@ export default function App() {
             tokenReceived = resData.token;
             successMessage = resData.message || `Welcome back, ${authenticatedUser.name}.`;
           }
+        } else if (res.status === 401 || res.status === 400 || res.status === 403 || res.status === 404) {
+          serverRejected = true;
+          const resData = await res.json().catch(() => ({}));
+          serverErrorMessage = resData?.error || 'Invalid email address or password.';
         }
       } catch {
-        // Flask microservice offline
+        // Flask microservice offline (network failure)
       }
     }
 
-    // 3. Resilient Local Clinician Authentication (Never blocks offline users)
+    // If Flask microservice explicitly rejected credentials, stop immediately
+    if (serverRejected) {
+      setAuthError(serverErrorMessage || 'Invalid email address or password.');
+      setAuthLoading(false);
+      return;
+    }
+
+    // 4. Strict Local Offline Validation (Only when backend services are offline)
     if (!authenticatedUser) {
-      // 3a. Default Seeded Cardiologist Demo
       if (cleanEmail === 'doctor@cardioguard.com') {
+        if (cleanPassword !== 'password123') {
+          setAuthError('Invalid email address or password.');
+          setAuthLoading(false);
+          return;
+        }
         authenticatedUser = {
           id: 'USR-DEMO-01',
           name: 'Dr. Alistair Reed, MD',
@@ -533,7 +568,11 @@ export default function App() {
         };
         successMessage = 'Authenticated session for Dr. Alistair Reed, MD (Cardiologist).';
       } else if (cleanEmail === 'schen@heartcare.ai') {
-        // 3b. Default Seeded Specialist Demo
+        if (cleanPassword !== 'password123') {
+          setAuthError('Invalid email address or password.');
+          setAuthLoading(false);
+          return;
+        }
         authenticatedUser = {
           id: 'USR-DEMO-02',
           name: 'Dr. Sarah Chen, MD',
@@ -545,12 +584,12 @@ export default function App() {
         };
         successMessage = 'Authenticated session for Dr. Sarah Chen, MD (Preventive Cardiologist).';
       } else {
-        // 3c. Check registered accounts from localStorage
+        // Check registered accounts in localStorage
         const registered = getRegisteredAccounts();
         const matched = registered.find(a => a.email.toLowerCase() === cleanEmail);
         if (matched) {
-          if (matched.password && matched.password !== cleanPassword) {
-            setAuthError('Incorrect password for this clinician account. Please verify and try again.');
+          if (matched.password !== cleanPassword) {
+            setAuthError('Invalid email address or password.');
             setAuthLoading(false);
             return;
           }
@@ -564,25 +603,15 @@ export default function App() {
             licenseNumber: matched.licenseNumber || ''
           };
           successMessage = `Welcome back, ${matched.name}.`;
-        } else if (cleanEmail.includes('@') && cleanPassword.length >= 4) {
-          // 3d. Permissive offline onboarding: create clinician profile seamlessly
-          const emailPrefix = cleanEmail.split('@')[0];
-          const autoName = 'Dr. ' + emailPrefix.split(/[._-]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-          authenticatedUser = {
-            id: 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
-            name: autoName,
-            email: cleanEmail,
-            role: 'Cardiologist',
-            institution: 'HeartCare Clinical Network',
-            phone: '+91 98765 43210',
-            licenseNumber: 'MD-' + Math.floor(100000 + Math.random() * 900000)
-          };
-          saveRegisteredAccount({ ...authenticatedUser, password: cleanPassword });
-          successMessage = `Clinician session initialized for ${autoName}.`;
+        } else {
+          setAuthError('No clinician account found with this email. Please register first.');
+          setAuthLoading(false);
+          return;
         }
       }
     }
 
+    // 5. Successful Authentication: Issue JWT token and transition to dashboard
     if (authenticatedUser) {
       const activeJwt = tokenReceived || generateClientJwt(authenticatedUser);
       setJwtToken(activeJwt);
@@ -598,7 +627,7 @@ export default function App() {
         setAuthLoading(false);
       }, 350);
     } else {
-      setAuthError('Invalid credentials. Please enter a valid clinician email and password, or click Quick Login above.');
+      setAuthError('Invalid credentials. Please enter a valid clinician email and password.');
       setAuthLoading(false);
     }
   };
@@ -616,14 +645,39 @@ export default function App() {
     const cleanPhone = regPhone.trim();
     const cleanLicense = regLicense.trim() || 'MD-' + Math.floor(100000 + Math.random() * 900000);
 
-    if (regPassword !== regConfirmPassword) {
-      setAuthError('Password mismatch: Passwords do not match.');
+    // Validation
+    if (!cleanName || !cleanEmail) {
+      setAuthError('Please enter your full name and clinical email address.');
+      setAuthLoading(false);
+      return;
+    }
+
+    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setAuthError('Please enter a valid clinical email address.');
       setAuthLoading(false);
       return;
     }
 
     if (regPassword.length < 6) {
       setAuthError('Password policy: Password must be at least 6 characters.');
+      setAuthLoading(false);
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setAuthError('Password mismatch: Passwords do not match.');
+      setAuthLoading(false);
+      return;
+    }
+
+    // Check if account already exists in registered accounts or demo accounts
+    const localAccounts = getRegisteredAccounts();
+    if (
+      cleanEmail === 'doctor@cardioguard.com' ||
+      cleanEmail === 'schen@heartcare.ai' ||
+      localAccounts.some(a => a.email.toLowerCase() === cleanEmail)
+    ) {
+      setAuthError('An account with this email address already exists. Please sign in.');
       setAuthLoading(false);
       return;
     }
@@ -697,9 +751,13 @@ export default function App() {
       password: regPassword
     });
 
-    // Reset password fields
+    // Reset registration form fields
+    setRegName('');
+    setRegEmail('');
     setRegPassword('');
     setRegConfirmPassword('');
+    setRegPhone('');
+    setRegLicense('');
 
     // Pre-fill login input with registered email so user can sign in immediately
     setLoginEmail(cleanEmail);

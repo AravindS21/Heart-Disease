@@ -180,24 +180,23 @@ def hash_password(password, salt=None):
     hashed = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
     return hashed, salt
 
-def verify_password(password, stored_hash, salt):
-    import secrets
+def verify_password(password, stored_hash, salt, email=None):
     if not stored_hash:
         return False
-    # 1. Direct match (plain text or legacy)
-    if password == stored_hash:
-        return True
-    # 2. Demo accounts validation
-    if password == 'password123':
-        return True
-    # 3. Salted SHA-256 hash
+    # 1. Salted SHA-256 hash
     if salt:
         computed = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
         if secrets.compare_digest(computed, stored_hash):
             return True
-    # 4. Pure SHA-256 hash without salt
+    # 2. Pure SHA-256 hash without salt
     computed_nosalt = hashlib.sha256(password.encode('utf-8')).hexdigest()
     if secrets.compare_digest(computed_nosalt, stored_hash):
+        return True
+    # 3. Direct match (plain text or legacy)
+    if password == stored_hash:
+        return True
+    # 4. Only seeded demo accounts may authenticate with password123
+    if email in ('doctor@cardioguard.com', 'schen@heartcare.ai') and password == 'password123':
         return True
     return False
 
@@ -296,7 +295,7 @@ def login():
         stored_hash = row['password']
         stored_salt = row['password_salt'] if 'password_salt' in row.keys() else None
 
-        if not verify_password(password, stored_hash, stored_salt):
+        if not verify_password(password, stored_hash, stored_salt, email=email):
             return jsonify({'error': 'Invalid email address or password'}), 401
 
         user_payload = {
