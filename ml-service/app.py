@@ -52,27 +52,43 @@ def init_db():
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        password_salt TEXT,
         role TEXT NOT NULL,
         institution TEXT,
         phone TEXT,
+        license_number TEXT,
         created_at TEXT NOT NULL
     )
     """)
 
+    # Try adding password_salt & license_number columns if missing
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN password_salt TEXT")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN license_number TEXT")
+    except Exception:
+        pass
+
     # Seed demo clinician account if not present
     cursor.execute("SELECT id FROM users WHERE email = ?", ('doctor@cardioguard.com',))
     if not cursor.fetchone():
+        demo_salt = '7b3e1c9840f1a52d'
+        demo_hash = hashlib.sha256((demo_salt + 'password123').encode('utf-8')).hexdigest()
         cursor.execute("""
-        INSERT INTO users (id, name, email, password, role, institution, phone, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (id, name, email, password, password_salt, role, institution, phone, license_number, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             'USR-DEMO-01',
             'Dr. Alistair Reed, MD',
             'doctor@cardioguard.com',
-            'password123',
+            demo_hash,
+            demo_salt,
             'Chief Cardiologist',
-            'Cardio-Diagnostic Health Institute',
-            '+1 (555) 019-2834',
+            'Central Cardiovascular Institute',
+            '+91 98765 43210',
+            'MD-849201',
             datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ))
 
@@ -80,6 +96,21 @@ def init_db():
     conn.close()
 
 init_db()
+
+def hash_password(password, salt=None):
+    import secrets
+    if not salt:
+        salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+    return hashed, salt
+
+def verify_password(password, stored_hash, salt):
+    import secrets
+    if not salt:
+        # Fallback for plain text passwords
+        return password == stored_hash
+    computed = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+    return secrets.compare_digest(computed, stored_hash)
 
 @app.after_request
 def after_request(response):
@@ -98,29 +129,34 @@ def register():
         name = data.get('name', '').strip()
         email = data.get('email', '').strip().lower()
         password = data.get('password', '').strip()
-        role = data.get('role', 'Healthcare Specialist').strip()
-        institution = data.get('institution', 'CardioGuard Health Center').strip()
+        role = data.get('role', 'Cardiologist').strip()
+        institution = data.get('institution', 'Central Cardiovascular Institute').strip()
         phone = data.get('phone', '').strip()
+        license_number = data.get('licenseNumber') or data.get('license_number') or ''
 
         if not name or not email or not password:
             return jsonify({'error': 'Name, email and password are required'}), 400
+
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
         if cursor.fetchone():
             conn.close()
             return jsonify({'error': 'An account with this email already exists'}), 409
 
+        pwd_hash, pwd_salt = hash_password(password)
         user_id = f"USR-{uuid.uuid4().hex[:8].upper()}"
         created_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         cursor.execute("""
-            INSERT INTO users (id, name, email, password, role, institution, phone, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, name, email, password, role, institution, phone, created_at))
+            INSERT INTO users (id, name, email, password, password_salt, role, institution, phone, license_number, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, name, email, pwd_hash, pwd_salt, role, institution, phone, license_number, created_at))
         conn.commit()
         conn.close()
 
@@ -131,9 +167,14 @@ def register():
             'role': role,
             'institution': institution,
             'phone': phone,
+            'licenseNumber': license_number,
             'createdAt': created_at
         }
-        return jsonify({'message': 'Registration successful', 'user': user_payload}), 201
+        return jsonify({
+            'message': 'Registration successful. Welcome to HeartCare AI.',
+            'user': user_payload,
+            'token': f"HCAI-{uuid.uuid4().hex}"
+        }), 201
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -155,12 +196,18 @@ def login():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id, name, email, password, role, institution, phone, created_at FROM users WHERE email = ?", (email,))
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email,))
         row = cursor.fetchone()
         conn.close()
 
-        if not row or row['password'] != password:
-            return jsonify({'error': 'Invalid email or password'}), 401
+        if not row:
+            return jsonify({'error': 'Invalid email address or password'}), 401
+
+        stored_hash = row['password']
+        stored_salt = row['password_salt'] if 'password_salt' in row.keys() else None
+
+        if not verify_password(password, stored_hash, stored_salt):
+            return jsonify({'error': 'Invalid email address or password'}), 401
 
         user_payload = {
             'id': row['id'],
@@ -169,9 +216,16 @@ def login():
             'role': row['role'],
             'institution': row['institution'],
             'phone': row['phone'],
+            'licenseNumber': row['license_number'] if 'license_number' in row.keys() else '',
+            'phone': row['phone'],
+            'licenseNumber': row['license_number'] if 'license_number' in row.keys() else '',
             'createdAt': row['created_at']
         }
-        return jsonify({'message': 'Login successful', 'user': user_payload}), 200
+        return jsonify({
+            'message': f"Authentication successful. Welcome, {row['name']}.",
+            'user': user_payload,
+            'token': f"HCAI-{uuid.uuid4().hex}"
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
