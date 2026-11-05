@@ -31,6 +31,7 @@ import {
   LogIn,
   PlusCircle,
   X,
+  Menu,
   BedDouble,
   Cigarette,
   Wine,
@@ -221,6 +222,7 @@ export default function App() {
   const [activeHomeSection, setActiveHomeSection] = useState('home');
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authNotice, setAuthNotice] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Clinician Dashboard State
   const [dashboardStats, setDashboardStats] = useState({
@@ -337,6 +339,7 @@ export default function App() {
 
   // Navigation scroll helper for Home and About page links
   const handleNavClick = (sectionId) => {
+    setMobileMenuOpen(false);
     setActiveHomeSection(sectionId);
     if (sectionId === 'home') {
       setActiveTab('home');
@@ -775,6 +778,7 @@ export default function App() {
   const handleSignOut = () => {
     setCurrentUser(null);
     setJwtToken('');
+    setMobileMenuOpen(false);
     try {
       localStorage.removeItem('cardioguard_user');
       localStorage.removeItem('cardioguard_jwt');
@@ -973,7 +977,7 @@ export default function App() {
       {/* ========================================================
           HeartCare AI Navigation Bar (Matches Attached Reference)
           ======================================================== */}
-      <header className="app-navbar">
+      <header className={`app-navbar ${mobileMenuOpen ? 'menu-open' : ''}`}>
         <div className="brand-section" onClick={() => handleNavClick('home')}>
           <HeartLogo size={42} />
           <div className="brand-info">
@@ -984,7 +988,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center Navigation Links */}
+        {/* Center Navigation Links (Desktop) */}
         <nav className="nav-links">
           <button
             type="button"
@@ -1016,7 +1020,7 @@ export default function App() {
               <button
                 type="button"
                 className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
               >
                 <Activity size={15} />
                 Dashboard
@@ -1024,7 +1028,7 @@ export default function App() {
               <button
                 type="button"
                 className={`nav-link-btn ${activeTab === 'assess' ? 'active' : ''}`}
-                onClick={() => setActiveTab('assess')}
+                onClick={() => { setActiveTab('assess'); setMobileMenuOpen(false); }}
               >
                 <Stethoscope size={15} />
                 Risk Assessment
@@ -1045,50 +1049,172 @@ export default function App() {
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
-          {currentUser ? (
-            <div className="user-profile-pill">
-              <div className="user-avatar">
-                <UserCheck size={18} />
+          {/* Desktop User Profile / Auth Links */}
+          <div className="nav-auth-desktop">
+            {currentUser ? (
+              <div className="user-profile-pill">
+                <div className="user-avatar">
+                  <UserCheck size={18} />
+                </div>
+                <div className="user-profile-info">
+                  <span className="user-profile-name">{currentUser.name}</span>
+                  <span className="user-profile-role">{currentUser.role || 'Cardiologist'}</span>
+                </div>
+                <button
+                  className="btn-signout"
+                  onClick={handleSignOut}
+                  title="Sign out"
+                >
+                  <LogOut size={14} />
+                </button>
               </div>
-              <div className="user-profile-info">
-                <span className="user-profile-name">{currentUser.name}</span>
-                <span className="user-profile-role">{currentUser.role || 'Cardiologist'}</span>
-              </div>
-              <button
-                className="btn-signout"
-                onClick={handleSignOut}
-                title="Sign out"
-              >
-                <LogOut size={14} />
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                className="btn-nav-login"
-                onClick={() => {
-                  setAuthNotice('');
-                  setAuthMode('login');
-                  setActiveTab('auth');
-                }}
-              >
-                <LogIn size={15} />
-                Login
-              </button>
-              <button
-                className="btn-nav-register"
-                onClick={() => {
-                  setAuthNotice('');
-                  setAuthMode('register');
-                  setActiveTab('auth');
-                }}
-              >
-                <UserPlus size={15} />
-                Register
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <button
+                  className="btn-nav-login"
+                  onClick={() => {
+                    setAuthNotice('');
+                    setAuthMode('login');
+                    setActiveTab('auth');
+                  }}
+                >
+                  <LogIn size={15} />
+                  Login
+                </button>
+                <button
+                  className="btn-nav-register"
+                  onClick={() => {
+                    setAuthNotice('');
+                    setAuthMode('register');
+                    setActiveTab('auth');
+                  }}
+                >
+                  <UserPlus size={15} />
+                  Register
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            className="mobile-menu-toggle-btn"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
+
+        {/* Responsive Mobile Drawer */}
+        {mobileMenuOpen && (
+          <div className="mobile-nav-drawer">
+            <nav className="mobile-nav-list">
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'home' ? 'active' : ''}`}
+                onClick={() => handleNavClick('home')}
+              >
+                <Home size={16} />
+                <span>Home</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'about' ? 'active' : ''}`}
+                onClick={() => handleNavClick('about')}
+              >
+                <Info size={16} />
+                <span>About</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'contact' ? 'active' : ''}`}
+                onClick={() => handleNavClick('contact')}
+              >
+                <Phone size={16} />
+                <span>Contact</span>
+              </button>
+
+              {currentUser && (
+                <>
+                  <button
+                    type="button"
+                    className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveTab('dashboard');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Activity size={16} />
+                    <span>Clinician Dashboard</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`mobile-nav-item ${activeTab === 'assess' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveTab('assess');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Stethoscope size={16} />
+                    <span>Risk Assessment</span>
+                  </button>
+                </>
+              )}
+            </nav>
+
+            <div className="mobile-nav-actions">
+              {currentUser ? (
+                <div className="mobile-user-card">
+                  <div className="mobile-user-avatar">
+                    <UserCheck size={18} />
+                  </div>
+                  <div className="mobile-user-details">
+                    <span className="mobile-user-name">{currentUser.name}</span>
+                    <span className="mobile-user-role">{currentUser.role || 'Cardiologist'}</span>
+                  </div>
+                  <button
+                    className="btn-mobile-signout"
+                    onClick={handleSignOut}
+                    title="Sign out"
+                  >
+                    <LogOut size={14} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="mobile-auth-grid">
+                  <button
+                    className="btn-nav-login mobile-auth-btn"
+                    onClick={() => {
+                      setAuthNotice('');
+                      setAuthMode('login');
+                      setActiveTab('auth');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogIn size={15} />
+                    <span>Login</span>
+                  </button>
+                  <button
+                    className="btn-nav-register mobile-auth-btn"
+                    onClick={() => {
+                      setAuthNotice('');
+                      setAuthMode('register');
+                      setActiveTab('auth');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <UserPlus size={15} />
+                    <span>Register</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ========================================================
@@ -1768,68 +1894,70 @@ export default function App() {
             </div>
 
             {filteredDashboardReports.length > 0 ? (
-              <table className="clinical-data-table">
-                <thead>
-                  <tr>
-                    <th>MRN / Accession</th>
-                    <th>Patient Demographics</th>
-                    <th>Cholesterol Level</th>
-                    <th>Risk Stratification</th>
-                    <th>Clinical Classification</th>
-                    <th>Date & Time</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDashboardReports.map((row, idx) => {
-                    const isHigh = row.risk_level === 'High Risk' || (row.risk_score && row.risk_score >= 50);
-                    const isMod = row.risk_level === 'Moderate Risk' || (row.risk_score && row.risk_score >= 20 && row.risk_score < 50);
-                    const pillClass = isHigh ? 'high' : isMod ? 'moderate' : 'low';
+              <div className="table-responsive">
+                <table className="clinical-data-table">
+                  <thead>
+                    <tr>
+                      <th>MRN / Accession</th>
+                      <th>Patient Demographics</th>
+                      <th>Cholesterol Level</th>
+                      <th>Risk Stratification</th>
+                      <th>Clinical Classification</th>
+                      <th>Date & Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDashboardReports.map((row, idx) => {
+                      const isHigh = row.risk_level === 'High Risk' || (row.risk_score && row.risk_score >= 50);
+                      const isMod = row.risk_level === 'Moderate Risk' || (row.risk_score && row.risk_score >= 20 && row.risk_score < 50);
+                      const pillClass = isHigh ? 'high' : isMod ? 'moderate' : 'low';
 
-                    return (
-                      <tr key={row.report_id || idx}>
-                        <td>
-                          <span className="patient-cell-mrn">{row.report_id}</span>
-                        </td>
-                        <td>
-                          <div className="patient-cell">
-                            <span className="patient-cell-name">{row.patient_name || 'Anonymous Patient'}</span>
-                            <span className="patient-cell-mrn">
-                              {row.sex || 'N/A'} • Age: {row.age || 'N/A'} • Blood: {row.blood_group || 'N/A'}
+                      return (
+                        <tr key={row.report_id || idx}>
+                          <td>
+                            <span className="patient-cell-mrn">{row.report_id}</span>
+                          </td>
+                          <td>
+                            <div className="patient-cell">
+                              <span className="patient-cell-name">{row.patient_name || 'Anonymous Patient'}</span>
+                              <span className="patient-cell-mrn">
+                                {row.sex || 'N/A'} • Age: {row.age || 'N/A'} • Blood: {row.blood_group || 'N/A'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="input-badge">{row.cholesterol || 'Normal'}</span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 800, fontFamily: 'JetBrains Mono, monospace' }}>
+                              {row.risk_score != null ? `${row.risk_score.toFixed(1)}%` : 'N/A'}
                             </span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="input-badge">{row.cholesterol || 'Normal'}</span>
-                        </td>
-                        <td>
-                          <span style={{ fontWeight: 800, fontFamily: 'JetBrains Mono, monospace' }}>
-                            {row.risk_score != null ? `${row.risk_score.toFixed(1)}%` : 'N/A'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`risk-pill ${pillClass}`}>
-                            {isHigh ? <AlertTriangle size={12} /> : isMod ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
-                            {row.risk_level || (isHigh ? 'High Risk' : isMod ? 'Moderate Risk' : 'Low Risk')}
-                          </span>
-                        </td>
-                        <td style={{ color: 'var(--slate-500)', fontSize: '12px' }}>
-                          {row.created_at ? new Date(row.created_at).toLocaleString() : 'Recent'}
-                        </td>
-                        <td>
-                          <button
-                            className="table-btn-view"
-                            onClick={() => loadPastReport(row.report_id)}
-                          >
-                            <FileText size={13} />
-                            Inspect Chart
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td>
+                            <span className={`risk-pill ${pillClass}`}>
+                              {isHigh ? <AlertTriangle size={12} /> : isMod ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+                              {row.risk_level || (isHigh ? 'High Risk' : isMod ? 'Moderate Risk' : 'Low Risk')}
+                            </span>
+                          </td>
+                          <td style={{ color: 'var(--slate-500)', fontSize: '12px' }}>
+                            {row.created_at ? new Date(row.created_at).toLocaleString() : 'Recent'}
+                          </td>
+                          <td>
+                            <button
+                              className="table-btn-view"
+                              onClick={() => loadPastReport(row.report_id)}
+                            >
+                              <FileText size={13} />
+                              Inspect Chart
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="empty-state-box">
                 <FileText size={40} style={{ color: 'var(--slate-300)' }} />
@@ -2771,7 +2899,8 @@ export default function App() {
                 <Activity size={15} />
                 Biometrics & Lipid Profile Analysis
               </span>
-              <table className="biometrics-table">
+              <div className="table-responsive">
+                <table className="biometrics-table">
                 <thead>
                   <tr>
                     <th>Biomarker / Indicator</th>
@@ -2896,6 +3025,7 @@ export default function App() {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Contributing Factors Matrix */}
@@ -3098,7 +3228,8 @@ export default function App() {
               {historyLoading ? (
                 <div style={{ textAlign: 'center', padding: '30px' }}>Loading records...</div>
               ) : reportsHistory.length > 0 ? (
-                <table className="clinical-data-table">
+                <div className="table-responsive">
+                  <table className="clinical-data-table">
                   <thead>
                     <tr>
                       <th>Accession</th>
@@ -3144,7 +3275,8 @@ export default function App() {
                     })}
                   </tbody>
                 </table>
-              ) : (
+              </div>
+            ) : (
                 <div className="empty-state-box">
                   <Database size={36} style={{ color: 'var(--slate-300)' }} />
                   <p>No records matching search query.</p>
